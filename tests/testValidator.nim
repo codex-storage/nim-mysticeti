@@ -34,6 +34,11 @@ suite "Validator":
     check proposal.blck.author == validator.identifier
     check proposal.signer == validator.identifier
 
-  test "by default proposals are undecided":
+  test "by default our own proposals are undecided":
     let proposal = validator.propose(seq[Transaction].example)
+    check validator.status(proposal) == some ProposalStatus.undecided
+
+  test "by default received proposals are undecided":
+    let proposal = validator2.propose(seq[Transaction].example)
+    validator.receive(proposal)
     check validator.status(proposal) == some ProposalStatus.undecided

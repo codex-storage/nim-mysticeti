@@ -43,8 +43,9 @@ func propose*(validator: Validator, transactions: seq[Transaction]): SignedBlock
   validator.round.proposals[validator.identifier] = @[proposal]
   validator.identity.sign(blck)
 
-func receive*(validator: Validator, proposal: SignedBlock) =
-  discard
+func receive*(validator: Validator, signed: SignedBlock) =
+  let proposal = Proposal(blck: signed.blck)
+  validator.round.proposals[signed.blck.author] = @[proposal]
 
 func round(validator: Validator, number: uint64): ?Round =
   var round = validator.round
