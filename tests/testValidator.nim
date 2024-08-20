@@ -34,6 +34,11 @@ suite "Validator":
     check proposal.blck.author == validator.identifier
     check proposal.signer == validator.identifier
 
+  test "validator cannot propose more than once in a round":
+    discard validator.propose(seq[Transaction].example)
+    expect AssertionDefect:
+      discard validator.propose(seq[Transaction].example)
+
   test "by default our own proposals are undecided":
     let proposal = validator.propose(seq[Transaction].example)
     check validator.status(proposal) == some ProposalStatus.undecided

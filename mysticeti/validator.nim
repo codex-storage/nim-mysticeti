@@ -32,6 +32,7 @@ func nextRound*(validator: Validator) =
   validator.round = Round(number: previous.number + 1, previous: some previous)
 
 func propose*(validator: Validator, transactions: seq[Transaction]): SignedBlock =
+  assert validator.identifier notin validator.round.proposals
   var parents: seq[BlockHash]
   let blck = Block.new(
     author = validator.identifier,
