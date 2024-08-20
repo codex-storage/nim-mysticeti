@@ -1,6 +1,6 @@
 import ./basics
 import ./identity
-import ./transactions
+import ./blocks
 
 type
   Validator* = ref object
@@ -18,8 +18,8 @@ type
     toSkip
     toCommit
 
-func new*(_: type Validator): Validator =
-  Validator(identity: Identity.init(), round: Round(number: 0))
+proc new*(_: type Validator, identities: IdentityScheme): Validator =
+  Validator(identity: Identity.init(identities), round: Round(number: 0))
 
 func identifier*(validator: Validator): Identifier =
   validator.identity.identifier
@@ -28,7 +28,7 @@ func nextRound*(validator: Validator) =
   let previous = validator.round
   validator.round = Round(number: previous.number + 1, previous: some previous)
 
-func propose*(validator: Validator, transactions: seq[Transaction]): Signed[Block] =
+func propose*(validator: Validator, transactions: seq[Transaction]): SignedBlock =
   var parents: seq[BlockHash]
   let blck = Block.new(
     author = validator.identifier,
@@ -40,7 +40,7 @@ func propose*(validator: Validator, transactions: seq[Transaction]): Signed[Bloc
   validator.round.proposals[validator.identifier] = @[proposal]
   validator.identity.sign(blck)
 
-func receive*(validator: Validator, proposal: Signed[Block]) =
+func receive*(validator: Validator, proposal: SignedBlock) =
   discard
 
 func round(validator: Validator, number: uint64): ?Round =
@@ -59,5 +59,5 @@ func status*(validator: Validator, blck: Block): ?ProposalStatus =
   else:
     none ProposalStatus
 
-func status*(validator: Validator, proposal: Signed[Block]): ?ProposalStatus =
-  validator.status(proposal.value)
+func status*(validator: Validator, proposal: SignedBlock): ?ProposalStatus =
+  validator.status(proposal.blck)
