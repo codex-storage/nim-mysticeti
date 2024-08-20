@@ -16,7 +16,7 @@ suite "Validator":
     validator2 = Validator.new(scheme)
     validator3 = Validator.new(scheme)
 
-  test "validators have a unique identifiers":
+  test "has a unique identifier":
     check Validator.new(scheme).identifier != Validator.new(scheme).identifier
 
   test "starts at round 0":
