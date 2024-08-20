@@ -27,9 +27,12 @@ func mockSign(identity: Identity, bytes: openArray[byte]): Signature =
   let id = MockIdentity(identity).id
   MockSignature(signer: id)
 
-func mockSigner(bytes: openArray[byte], signature: Signature): Identifier =
+func mockSigner(signature: Signature, bytes: openArray[byte]): Identifier =
   let signer = MockSignature(signature).signer
   MockIdentifier(id: signer)
+
+func mockToString(identifier: Identifier): string =
+  MockIdentifier(identifier).id
 
 func mockHash(identifier: Identifier): Hash =
   MockIdentifier(identifier).id.hash
@@ -41,5 +44,6 @@ let mockIdentityScheme* = IdentityScheme.new(
   mockEquals,
   mockSign,
   mockSigner,
+  mockToString,
   mockHash
 )

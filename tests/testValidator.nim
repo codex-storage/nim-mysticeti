@@ -29,6 +29,11 @@ suite "Validator":
     validator.nextRound()
     check validator.round == 3
 
+  test "validators sign their proposals":
+    let proposal = validator.propose(seq[Transaction].example)
+    check proposal.blck.author == validator.identifier
+    check proposal.signer == validator.identifier
+
   test "by default proposals are undecided":
     let proposal = validator.propose(seq[Transaction].example)
     check validator.status(proposal) == some ProposalStatus.undecided
