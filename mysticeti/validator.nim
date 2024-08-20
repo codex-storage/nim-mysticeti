@@ -24,6 +24,9 @@ proc new*(_: type Validator, identities: IdentityScheme): Validator =
 func identifier*(validator: Validator): Identifier =
   validator.identity.identifier
 
+func round*(validator: Validator): uint64 =
+  validator.round.number
+
 func nextRound*(validator: Validator) =
   let previous = validator.round
   validator.round = Round(number: previous.number + 1, previous: some previous)

@@ -19,6 +19,16 @@ suite "Validator":
   test "validators have a unique identifiers":
     check Validator.new(scheme).identifier != Validator.new(scheme).identifier
 
+  test "starts at round 0":
+    check validator.round == 0
+
+  test "can move to next round":
+    validator.nextRound()
+    check validator.round == 1
+    validator.nextRound()
+    validator.nextRound()
+    check validator.round == 3
+
   test "by default proposals are undecided":
     let proposal = validator.propose(seq[Transaction].example)
     check validator.status(proposal) == some ProposalStatus.undecided
