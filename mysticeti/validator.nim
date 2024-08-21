@@ -43,6 +43,9 @@ func nextRound*(validator: Validator) =
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   assert validator.identifier notin validator.round.proposals
   var parents: seq[Hash[Validator.Hashing]]
+  if previous =? validator.round.previous:
+    for id in previous.proposals.keys:
+      parents.add(previous.proposals[id][0].blck.blockHash)
   let blck = Block.new(
     author = validator.identifier,
     round = validator.round.number,

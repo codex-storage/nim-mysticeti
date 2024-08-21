@@ -47,3 +47,15 @@ suite "Validator":
     let proposal = validator2.propose(seq[Transaction].example)
     validator.receive(proposal)
     check validator.status(proposal) == some ProposalStatus.undecided
+
+  test "validator includes blocks from previous round as parents":
+    let proposal1 = validator.propose(seq[Transaction].example)
+    let proposal2 = validator2.propose(seq[Transaction].example)
+    let proposal3 = validator3.propose(seq[Transaction].example)
+    validator.receive(proposal2)
+    validator.receive(proposal3)
+    validator.nextRound()
+    let proposal4 = validator.propose(seq[Transaction].example)
+    check proposal1.blck.blockHash in proposal4.blck.parents
+    check proposal2.blck.blockHash in proposal4.blck.parents
+    check proposal3.blck.blockHash in proposal4.blck.parents
