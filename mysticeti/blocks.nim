@@ -1,23 +1,23 @@
 import ./signing
+import ./hashing
 
 type Transaction* = object
 
 type
-  Block*[Signing] = object
+  Block*[Signing, Hashing] = object
     author: Identifier[Signing]
     round: uint64
-    parents: seq[BlockHash]
+    parents: seq[Hash[Hashing]]
     transactions: seq[Transaction]
-  BlockHash* = object
 
 func new*(
   _: type Block,
   author: Identifier,
   round: uint64,
-  parents: seq[BlockHash],
+  parents: seq[Hash],
   transactions: seq[Transaction]
 ): auto =
-  Block[Identifier.Signing](
+  Block[Identifier.Signing, Hash.Hashing](
     author: author,
     round: round,
     parents: parents,
@@ -30,20 +30,28 @@ func author*(blck: Block): auto =
 func round*(blck: Block): uint64 =
   blck.round
 
+func parents*(blck: Block): auto =
+  blck.parents
 
-type SignedBlock*[Signing] = object
-  blck: Block[Signing]
+func toBytes(blck: Block): seq[byte] =
+  cast[seq[byte]]($blck) # TODO: proper serialization
+
+func blockHash*(blck: Block): auto =
+  Block.Hashing.hash(blck.toBytes)
+
+type SignedBlock*[Signing, Hashing] = object
+  blck: Block[Signing, Hashing]
   signature: Signature[Signing]
+
+func new*(_: type SignedBlock, blck: Block, signature: Signature): auto =
+  SignedBlock[Block.Signing, Block.Hashing](blck: blck, signature: signature)
 
 func blck*(signed: SignedBlock): auto =
   signed.blck
 
-func toBytes(blck: Block): seq[byte] =
-  discard # TODO: serialization
-
 func sign*(identity: Identity, blck: Block): auto =
   let signature = identity.sign(blck.toBytes)
-  SignedBlock[Identity.Signing](blck: blck, signature: signature)
+  SignedBlock.new(blck, signature)
 
 func signer*(signed: SignedBlock): auto =
   signed.signature.signer(signed.blck.toBytes)

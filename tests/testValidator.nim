@@ -2,11 +2,11 @@ import std/unittest
 import pkg/questionable
 import mysticeti
 import ./examples
-import ./mocks/signing
+import ./mocks
 
 suite "Validator":
 
-  type Validator = mysticeti.Validator[MockSigning]
+  type Validator = mysticeti.Validator[MockSigning, MockHashing]
 
   var validator: Validator
   var validator2, validator3: Validator

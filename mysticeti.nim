@@ -16,6 +16,16 @@ export blocks.Transaction
 export blocks.Block
 export blocks.author
 export blocks.round
+export blocks.parents
+export blocks.blockHash
 export blocks.SignedBlock
 export blocks.blck
 export blocks.signer
+
+import ./mysticeti/signing
+
+export signing.`$`
+
+import ./mysticeti/hashing
+
+export hashing.`$`

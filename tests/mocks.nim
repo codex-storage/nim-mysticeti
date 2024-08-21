@@ -1,3 +1,5 @@
-import ./mocks/identity
+import ./mocks/signing
+import ./mocks/hashing
 
-export identity
+export signing
+export hashing
