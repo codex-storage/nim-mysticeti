@@ -24,10 +24,10 @@ func new*[Scheme](
     transactions: transactions
   )
 
-func author*[Scheme](blck: Block[Scheme]): Identifier[Scheme] =
+func author*(blck: Block): auto =
   blck.author
 
-func round*[Scheme](blck: Block[Scheme]): uint64 =
+func round*(blck: Block): uint64 =
   blck.round
 
 
@@ -35,15 +35,15 @@ type SignedBlock*[Scheme] = object
   blck: Block[Scheme]
   signature: Signature[Scheme]
 
-func blck*[Scheme](signed: SignedBlock[Scheme]): Block[Scheme] =
+func blck*(signed: SignedBlock): auto =
   signed.blck
 
-func toBytes[Scheme](blck: Block[Scheme]): seq[byte] =
+func toBytes(blck: Block): seq[byte] =
   discard # TODO: serialization
 
-func sign*[Scheme](identity: Identity[Scheme], blck: Block[Scheme]): SignedBlock[Scheme] =
+func sign*(identity: Identity, blck: Block): auto =
   let signature = identity.sign(blck.toBytes)
-  SignedBlock[Scheme](blck: blck, signature: signature)
+  SignedBlock[Identity.Scheme](blck: blck, signature: signature)
 
-func signer*[Scheme](signed: SignedBlock[Scheme]): Identifier[Scheme] =
+func signer*(signed: SignedBlock): auto =
   signed.signature.signer(signed.blck.toBytes)

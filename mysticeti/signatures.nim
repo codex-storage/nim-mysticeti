@@ -11,14 +11,14 @@ proc init*[Scheme](_: type Identity[Scheme]): Identity[Scheme] =
   mixin init
   Identity[Scheme](value: Scheme.Identity.init())
 
-func identifier*[Scheme](identity: Identity[Scheme]): Identifier[Scheme] =
+func identifier*(identity: Identity): auto =
   mixin identifier
-  Identifier[Scheme](value: identity.value.identifier)
+  Identifier[Identity.Scheme](value: identity.value.identifier)
 
-func sign*[Scheme](identity: Identity[Scheme], bytes: openArray[byte]): Signature[Scheme] =
+func sign*(identity: Identity, bytes: openArray[byte]): auto =
   mixin sign
-  Signature[Scheme](value: identity.value.sign(bytes))
+  Signature[Identity.Scheme](value: identity.value.sign(bytes))
 
-func signer*[Scheme](signature: Signature[Scheme], bytes: openArray[byte]): Identifier[Scheme] =
+func signer*(signature: Signature, bytes: openArray[byte]): auto =
   mixin signer
-  Identifier[Scheme](value: signature.value.signer(bytes))
+  Identifier[Signature.Scheme](value: signature.value.signer(bytes))
