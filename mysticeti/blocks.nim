@@ -1,48 +1,49 @@
-import ./identity
+import ./signatures
 
 type Transaction* = object
 
 type
-  Block* = object
-    author: Identifier
+  Block*[Scheme] = object
+    author: Identifier[Scheme]
     round: uint64
     parents: seq[BlockHash]
     transactions: seq[Transaction]
   BlockHash* = object
 
-func new*(
-  _: type Block,
+func new*[Scheme](
+  _: type Block[Scheme],
   author: Identifier,
   round: uint64,
   parents: seq[BlockHash],
   transactions: seq[Transaction]
-): Block =
-  Block(
+): Block[Scheme] =
+  Block[Scheme](
     author: author,
     round: round,
     parents: parents,
     transactions: transactions
   )
 
-func author*(blck: Block): Identifier =
+func author*[Scheme](blck: Block[Scheme]): Identifier[Scheme] =
   blck.author
 
-func round*(blck: Block): uint64 =
+func round*[Scheme](blck: Block[Scheme]): uint64 =
   blck.round
 
-type SignedBlock* = object
-  blck: Block
-  signature: Signature
 
-func blck*(signed: SignedBlock): Block =
+type SignedBlock*[Scheme] = object
+  blck: Block[Scheme]
+  signature: Signature[Scheme]
+
+func blck*[Scheme](signed: SignedBlock[Scheme]): Block[Scheme] =
   signed.blck
 
-func toBytes(blck: Block): seq[byte] =
+func toBytes[Scheme](blck: Block[Scheme]): seq[byte] =
   discard # TODO: serialization
 
-func sign*(identity: Identity, blck: Block): SignedBlock =
+func sign*[Scheme](identity: Identity[Scheme], blck: Block[Scheme]): SignedBlock[Scheme] =
   let signature = identity.sign(blck.toBytes)
-  SignedBlock(blck: blck, signature: signature)
+  SignedBlock[Scheme](blck: blck, signature: signature)
 
-func signer*(signed: SignedBlock): Identifier =
+func signer*[Scheme](signed: SignedBlock[Scheme]): Identifier[Scheme] =
   signed.signature.signer(signed.blck.toBytes)

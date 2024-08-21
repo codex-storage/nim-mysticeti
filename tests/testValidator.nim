@@ -2,22 +2,22 @@ import std/unittest
 import pkg/questionable
 import mysticeti
 import ./examples
-import ./mocks/identity
+import ./mocks/signatures
 
 suite "Validator":
+
+  type Validator = mysticeti.Validator[MockSignatureScheme]
 
   var validator: Validator
   var validator2, validator3: Validator
 
-  let scheme = mockIdentityScheme
-
   setup:
-    validator = Validator.new(scheme)
-    validator2 = Validator.new(scheme)
-    validator3 = Validator.new(scheme)
+    validator = Validator.new()
+    validator2 = Validator.new()
+    validator3 = Validator.new()
 
   test "has a unique identifier":
-    check Validator.new(scheme).identifier != Validator.new(scheme).identifier
+    check Validator.new().identifier != Validator.new().identifier
 
   test "starts at round 0":
     check validator.round == 0

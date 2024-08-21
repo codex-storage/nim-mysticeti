@@ -19,8 +19,3 @@ export blocks.round
 export blocks.SignedBlock
 export blocks.blck
 export blocks.signer
-
-import ./mysticeti/identity
-
-export identity.`==`
-export identity.`$`
