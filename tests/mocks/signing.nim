@@ -1,7 +1,7 @@
 import std/random
 import std/sequtils
 import std/strutils
-import mysticeti/signatures
+import mysticeti/signing
 
 type
   Identity = object
@@ -10,7 +10,7 @@ type
     id: string
   Signature = object
     signer: string
-  MockSignatureScheme* = SignatureScheme[Identity, Identifier, Signature]
+  MockSigning* = Signing[Identity, Identifier, Signature]
 
 proc init*(_: type Identity): Identity =
   Identity(id: newSeqWith(32, rand(byte)).mapIt(it.toHex(2)).join())

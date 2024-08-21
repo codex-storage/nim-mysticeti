@@ -1,23 +1,23 @@
-import ./signatures
+import ./signing
 
 type Transaction* = object
 
 type
-  Block*[Scheme] = object
-    author: Identifier[Scheme]
+  Block*[Signing] = object
+    author: Identifier[Signing]
     round: uint64
     parents: seq[BlockHash]
     transactions: seq[Transaction]
   BlockHash* = object
 
-func new*[Scheme](
-  _: type Block[Scheme],
+func new*[Signing](
+  _: type Block[Signing],
   author: Identifier,
   round: uint64,
   parents: seq[BlockHash],
   transactions: seq[Transaction]
-): Block[Scheme] =
-  Block[Scheme](
+): Block[Signing] =
+  Block[Signing](
     author: author,
     round: round,
     parents: parents,
@@ -31,9 +31,9 @@ func round*(blck: Block): uint64 =
   blck.round
 
 
-type SignedBlock*[Scheme] = object
-  blck: Block[Scheme]
-  signature: Signature[Scheme]
+type SignedBlock*[Signing] = object
+  blck: Block[Signing]
+  signature: Signature[Signing]
 
 func blck*(signed: SignedBlock): auto =
   signed.blck
@@ -43,7 +43,7 @@ func toBytes(blck: Block): seq[byte] =
 
 func sign*(identity: Identity, blck: Block): auto =
   let signature = identity.sign(blck.toBytes)
-  SignedBlock[Identity.Scheme](blck: blck, signature: signature)
+  SignedBlock[Identity.Signing](blck: blck, signature: signature)
 
 func signer*(signed: SignedBlock): auto =
   signed.signature.signer(signed.blck.toBytes)
