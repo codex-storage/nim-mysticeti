@@ -10,14 +10,14 @@ type
     transactions: seq[Transaction]
   BlockHash* = object
 
-func new*[Signing](
-  _: type Block[Signing],
+func new*(
+  _: type Block,
   author: Identifier,
   round: uint64,
   parents: seq[BlockHash],
   transactions: seq[Transaction]
-): Block[Signing] =
-  Block[Signing](
+): auto =
+  Block[Identifier.Signing](
     author: author,
     round: round,
     parents: parents,

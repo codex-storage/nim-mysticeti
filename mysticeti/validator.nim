@@ -34,7 +34,7 @@ func nextRound*(validator: Validator) =
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   assert validator.identifier notin validator.round.proposals
   var parents: seq[BlockHash]
-  let blck = Block[Validator.Signing].new(
+  let blck = Block.new(
     author = validator.identifier,
     round = validator.round.number,
     parents = parents,
