@@ -6,7 +6,11 @@ import ./blocks
 type
   Validator*[Signing, Hashing] = ref object
     identity: Identity[Signing]
+    committee: Committee[Signing]
     round: Round[Signing, Hashing]
+  Committee*[Signing] = ref object
+    stakes: Table[Identifier[Signing], Stake]
+  Stake = float64
   Round[Signing, Hashing] = ref object
     number: uint64
     previous: ?Round[Signing, Hashing]
@@ -19,10 +23,12 @@ type
     toSkip
     toCommit
 
-proc new*(T: type Validator): T =
-  let identity = Identity[T.Signing].init()
+func new*(T: type Validator; identity: Identity, committee: Committee): T =
   let round = Round[T.Signing, T.Hashing](number: 0)
-  T(identity: identity, round: round)
+  T(identity: identity, committee: committee, round: round)
+
+func new*(_: type Committee, stakes: openArray[(Identifier, Stake)]): auto =
+  Committee[Identifier.Signing](stakes: stakes.toTable)
 
 func new*(_: type Round, number: uint64, previous: Round): auto =
   Round(number: number, previous: some previous)

@@ -1,6 +1,7 @@
 import ./mysticeti/validator
 
 export validator.Validator
+export validator.Committee
 export validator.ProposalStatus
 export validator.new
 export validator.identifier
@@ -24,6 +25,9 @@ export blocks.signer
 
 import ./mysticeti/signing
 
+export signing.Identity
+export signing.init
+export signing.identifier
 export signing.`$`
 
 import ./mysticeti/hashing
