@@ -16,6 +16,7 @@ type
     slots: Table[Identifier[Signing], ProposerSlot[Signing, Hashing]]
   ProposerSlot[Signing, Hashing] = object
     proposal: Block[Signing, Hashing]
+    skippedBy: Stake
     status: ProposalStatus
   ProposalStatus* = enum
     undecided
@@ -41,6 +42,9 @@ func identifier*(validator: Validator): auto =
 func round*(validator: Validator): uint64 =
   validator.round.number
 
+func stake(committee: Committee, identifier: Identifier): Stake =
+  committee.stakes.getOrDefault(identifier)
+
 func nextRound*(validator: Validator) =
   let previous = validator.round
   validator.round = Round.new(previous.number + 1, previous)
@@ -60,8 +64,23 @@ proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   validator.round.slots[validator.identifier] = ProposerSlot.init(blck)
   validator.identity.sign(blck)
 
+func skips(blck: Block, round: uint64, author: Identifier): bool =
+  for parent in blck.parents:
+    if parent.round == round and parent.author == author:
+      return false
+  true
+
+func updateSkipped(validator: Validator, received: Block) =
+  if previous =? validator.round.previous:
+    for (id, slot) in previous.slots.mpairs:
+      if received.skips(previous.number, id):
+        slot.skippedBy += validator.committee.stake(received.author)
+      if slot.skippedBy > 2/3:
+        slot.status = ProposalStatus.toSkip
+
 func receive*(validator: Validator, signed: SignedBlock) =
   validator.round.slots[signed.blck.author] = ProposerSlot.init(signed.blck)
+  validator.updateSkipped(signed.blck)
 
 func round(validator: Validator, number: uint64): auto =
   var round = validator.round

@@ -24,6 +24,11 @@ suite "Validator":
     validator3 = Validator.new(identity3, committee)
     validator4 = Validator.new(identity4, committee)
 
+  proc nextRound =
+    validator1.nextRound()
+    validator2.nextRound()
+    validator3.nextRound()
+    validator4.nextRound()
 
   test "starts at round 0":
     check validator1.round == 0
@@ -68,3 +73,13 @@ suite "Validator":
     check proposal2.blck.id in proposal5.blck.parents
     check proposal3.blck.id in proposal5.blck.parents
     check proposal4.blck.id in proposal5.blck.parents
+
+  test "skips blocks that are ignored by >2f validators":
+    # other validators do not receive this proposal:
+    let proposal = validator1.propose(seq[Transaction].example)
+    nextRound()
+    validator1.receive(validator2.propose(seq[Transaction].example))
+    validator1.receive(validator3.propose(seq[Transaction].example))
+    check validator1.status(proposal) == some ProposalStatus.undecided
+    validator1.receive(validator4.propose(seq[Transaction].example))
+    check validator1.status(proposal) == some ProposalStatus.toSkip
