@@ -15,10 +15,11 @@ import ./mysticeti/blocks
 
 export blocks.Transaction
 export blocks.Block
+export blocks.BlockId
 export blocks.author
 export blocks.round
 export blocks.parents
-export blocks.blockHash
+export blocks.id
 export blocks.SignedBlock
 export blocks.blck
 export blocks.signer

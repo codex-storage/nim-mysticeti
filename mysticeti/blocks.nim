@@ -7,27 +7,31 @@ type
   Block*[Signing, Hashing] = object
     author: Identifier[Signing]
     round: uint64
-    parents: seq[Hash[Hashing]]
+    parents: seq[BlockId[Signing, Hashing]]
     transactions: seq[Transaction]
+  BlockId*[Signing, Hashing] = object
+    author: Identifier[Signing]
+    round: uint64
+    hash: Hash[Hashing]
 
 func new*(
   _: type Block,
   author: Identifier,
   round: uint64,
-  parents: seq[Hash],
+  parents: seq[BlockId],
   transactions: seq[Transaction]
 ): auto =
-  Block[Identifier.Signing, Hash.Hashing](
+  Block[BlockId.Signing, BlockId.Hashing](
     author: author,
     round: round,
     parents: parents,
     transactions: transactions
   )
 
-func author*(blck: Block): auto =
+func author*(blck: Block | BlockId): auto =
   blck.author
 
-func round*(blck: Block): uint64 =
+func round*(blck: Block | BlockId): uint64 =
   blck.round
 
 func parents*(blck: Block): auto =
@@ -36,8 +40,12 @@ func parents*(blck: Block): auto =
 func toBytes(blck: Block): seq[byte] =
   cast[seq[byte]]($blck) # TODO: proper serialization
 
-func blockHash*(blck: Block): auto =
-  Block.Hashing.hash(blck.toBytes)
+func id*(blck: Block): auto =
+  BlockId[Block.Signing, Block.Hashing](
+    author: blck.author,
+    round: blck.round,
+    hash: Block.Hashing.hash(blck.toBytes)
+  )
 
 type SignedBlock*[Signing, Hashing] = object
   blck: Block[Signing, Hashing]

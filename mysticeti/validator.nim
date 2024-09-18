@@ -1,6 +1,5 @@
 import ./basics
 import ./signing
-import ./hashing
 import ./blocks
 
 type
@@ -48,10 +47,10 @@ func nextRound*(validator: Validator) =
 
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   assert validator.identifier notin validator.round.slots
-  var parents: seq[Hash[Validator.Hashing]]
+  var parents: seq[BlockId[Validator.Signing, Validator.Hashing]]
   if previous =? validator.round.previous:
     for id in previous.slots.keys:
-      parents.add(previous.slots[id].proposal.blockHash)
+      parents.add(previous.slots[id].proposal.id)
   let blck = Block.new(
     author = validator.identifier,
     round = validator.round.number,

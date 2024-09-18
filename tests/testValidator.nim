@@ -64,7 +64,7 @@ suite "Validator":
     validator1.receive(proposal4)
     validator1.nextRound()
     let proposal5 = validator1.propose(seq[Transaction].example)
-    check proposal1.blck.blockHash in proposal5.blck.parents
-    check proposal2.blck.blockHash in proposal5.blck.parents
-    check proposal3.blck.blockHash in proposal5.blck.parents
-    check proposal4.blck.blockHash in proposal5.blck.parents
+    check proposal1.blck.id in proposal5.blck.parents
+    check proposal2.blck.id in proposal5.blck.parents
+    check proposal3.blck.id in proposal5.blck.parents
+    check proposal4.blck.id in proposal5.blck.parents
