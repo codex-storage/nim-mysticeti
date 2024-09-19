@@ -118,11 +118,10 @@ suite "Validator":
     validator4.receive(proposal6)
     validator4.receive(proposal7)
     nextRound()
+    discard validator1.propose(seq[Transaction].example)
     let proposal10 = validator2.propose(seq[Transaction].example)
     let proposal11 = validator3.propose(seq[Transaction].example)
-    let proposal12 = validator4.propose(seq[Transaction].example)
     validator1.receive(proposal10)
-    validator1.receive(proposal11)
     check validator1.status(proposal1) == some ProposalStatus.undecided
-    validator1.receive(proposal12)
+    validator1.receive(proposal11)
     check validator1.status(proposal1) == some ProposalStatus.toCommit
