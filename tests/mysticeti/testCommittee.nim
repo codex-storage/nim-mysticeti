@@ -30,7 +30,7 @@ suite "Commitee of Validators":
     validator3.nextRound()
     validator4.nextRound()
 
-  test "validators include blocks from previous round as parents":
+  proc exchangeProposals: auto =
     let proposal1 = validator1.propose(seq[Transaction].example)
     let proposal2 = validator2.propose(seq[Transaction].example)
     let proposal3 = validator3.propose(seq[Transaction].example)
@@ -38,12 +38,25 @@ suite "Commitee of Validators":
     validator1.receive(proposal2)
     validator1.receive(proposal3)
     validator1.receive(proposal4)
-    validator1.nextRound()
-    let proposal5 = validator1.propose(seq[Transaction].example)
-    check proposal1.blck.id in proposal5.blck.parents
-    check proposal2.blck.id in proposal5.blck.parents
-    check proposal3.blck.id in proposal5.blck.parents
-    check proposal4.blck.id in proposal5.blck.parents
+    validator2.receive(proposal1)
+    validator2.receive(proposal3)
+    validator2.receive(proposal4)
+    validator3.receive(proposal1)
+    validator3.receive(proposal2)
+    validator3.receive(proposal4)
+    validator4.receive(proposal1)
+    validator4.receive(proposal2)
+    validator4.receive(proposal3)
+    (proposal1, proposal2, proposal3, proposal4)
+
+  test "validators include blocks from previous round as parents":
+    let previous = exchangeProposals()
+    nextRound()
+    let proposal = validator1.propose(seq[Transaction].example)
+    check previous[0].blck.id in proposal.blck.parents
+    check previous[1].blck.id in proposal.blck.parents
+    check previous[2].blck.id in proposal.blck.parents
+    check previous[3].blck.id in proposal.blck.parents
 
   test "by default received proposals are undecided":
     let proposal = validator2.propose(seq[Transaction].example)
@@ -61,44 +74,12 @@ suite "Commitee of Validators":
     check validator1.status(proposal) == some ProposalStatus.toSkip
 
   test "commits blocks that have >2f certificates":
-    let proposal1 = validator1.propose(seq[Transaction].example)
-    let proposal2 = validator2.propose(seq[Transaction].example)
-    let proposal3 = validator3.propose(seq[Transaction].example)
-    let proposal4 = validator4.propose(seq[Transaction].example)
-    validator1.receive(proposal2)
-    validator1.receive(proposal3)
-    validator1.receive(proposal4)
-    validator2.receive(proposal1)
-    validator2.receive(proposal3)
-    validator2.receive(proposal4)
-    validator3.receive(proposal1)
-    validator3.receive(proposal2)
-    validator3.receive(proposal4)
-    validator4.receive(proposal1)
-    validator4.receive(proposal2)
-    validator4.receive(proposal3)
+    let (proposal, _, _, _) = exchangeProposals()
     nextRound()
-    let proposal5 = validator1.propose(seq[Transaction].example)
-    let proposal6 = validator2.propose(seq[Transaction].example)
-    let proposal7 = validator3.propose(seq[Transaction].example)
-    let proposal8 = validator4.propose(seq[Transaction].example)
-    validator1.receive(proposal6)
-    validator1.receive(proposal7)
-    validator1.receive(proposal8)
-    validator2.receive(proposal5)
-    validator2.receive(proposal7)
-    validator2.receive(proposal8)
-    validator3.receive(proposal5)
-    validator3.receive(proposal6)
-    validator3.receive(proposal8)
-    validator4.receive(proposal5)
-    validator4.receive(proposal6)
-    validator4.receive(proposal7)
+    discard exchangeProposals()
     nextRound()
     discard validator1.propose(seq[Transaction].example)
-    let proposal10 = validator2.propose(seq[Transaction].example)
-    let proposal11 = validator3.propose(seq[Transaction].example)
-    validator1.receive(proposal10)
-    check validator1.status(proposal1) == some ProposalStatus.undecided
-    validator1.receive(proposal11)
-    check validator1.status(proposal1) == some ProposalStatus.toCommit
+    validator1.receive(validator2.propose(seq[Transaction].example))
+    check validator1.status(proposal) == some ProposalStatus.undecided
+    validator1.receive(validator3.propose(seq[Transaction].example))
+    check validator1.status(proposal) == some ProposalStatus.toCommit
