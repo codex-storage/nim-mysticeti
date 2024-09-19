@@ -4,7 +4,7 @@ import mysticeti
 import ./examples
 import ./mocks
 
-suite "Validator":
+suite "Commitee of Validators":
 
   type Validator = mysticeti.Validator[MockSigning, MockHashing]
   type Identity = mysticeti.Identity[MockSigning]
@@ -30,36 +30,7 @@ suite "Validator":
     validator3.nextRound()
     validator4.nextRound()
 
-  test "starts at round 0":
-    check validator1.round == 0
-
-  test "can move to next round":
-    validator1.nextRound()
-    check validator1.round == 1
-    validator1.nextRound()
-    validator1.nextRound()
-    check validator1.round == 3
-
-  test "validators sign their proposals":
-    let proposal = validator1.propose(seq[Transaction].example)
-    check proposal.blck.author == validator1.identifier
-    check proposal.signer == validator1.identifier
-
-  test "validator cannot propose more than once in a round":
-    discard validator1.propose(seq[Transaction].example)
-    expect AssertionDefect:
-      discard validator1.propose(seq[Transaction].example)
-
-  test "by default our own proposals are undecided":
-    let proposal = validator1.propose(seq[Transaction].example)
-    check validator1.status(proposal) == some ProposalStatus.undecided
-
-  test "by default received proposals are undecided":
-    let proposal = validator2.propose(seq[Transaction].example)
-    validator1.receive(proposal)
-    check validator1.status(proposal) == some ProposalStatus.undecided
-
-  test "validator includes blocks from previous round as parents":
+  test "validators include blocks from previous round as parents":
     let proposal1 = validator1.propose(seq[Transaction].example)
     let proposal2 = validator2.propose(seq[Transaction].example)
     let proposal3 = validator3.propose(seq[Transaction].example)
@@ -74,6 +45,11 @@ suite "Validator":
     check proposal3.blck.id in proposal5.blck.parents
     check proposal4.blck.id in proposal5.blck.parents
 
+  test "by default received proposals are undecided":
+    let proposal = validator2.propose(seq[Transaction].example)
+    validator1.receive(proposal)
+    check validator1.status(proposal) == some ProposalStatus.undecided
+
   test "skips blocks that are ignored by >2f validators":
     # other validators do not receive this proposal:
     let proposal = validator1.propose(seq[Transaction].example)
@@ -83,6 +59,7 @@ suite "Validator":
     check validator1.status(proposal) == some ProposalStatus.undecided
     validator1.receive(validator4.propose(seq[Transaction].example))
     check validator1.status(proposal) == some ProposalStatus.toSkip
+
   test "commits blocks that have >2f certificates":
     let proposal1 = validator1.propose(seq[Transaction].example)
     let proposal2 = validator2.propose(seq[Transaction].example)
