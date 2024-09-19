@@ -17,6 +17,7 @@ type
   ProposerSlot[Signing, Hashing] = object
     proposal: Block[Signing, Hashing]
     skippedBy: Stake
+    certifiedBy: Stake
     status: ProposalStatus
   ProposalStatus* = enum
     undecided
@@ -78,9 +79,34 @@ func updateSkipped(validator: Validator, received: Block) =
       if slot.skippedBy > 2/3:
         slot.status = ProposalStatus.toSkip
 
+func supports(blck: Block, round: uint64, author: Identifier): bool =
+  for parent in blck.parents:
+    if parent.round == round and parent.author == author:
+      return true
+  false
+
+func updateCertified(validator: Validator, received: Block) =
+  # three rounds: proposing -> supporting -> certifying
+  let certifying = validator.round
+  without supporting =? certifying.previous:
+    return
+  without proposing =? supporting.previous:
+    return
+  for (proposerId, proposerSlot) in proposing.slots.mpairs:
+    var support: Stake
+    for (supporterId, supporterSlot) in supporting.slots.pairs:
+      if received.supports(supporting.number, supporterId):
+        if supporterSlot.proposal.supports(proposing.number, proposerId):
+          support += validator.committee.stake(supporterId)
+    if support > 2/3:
+      proposerSlot.certifiedBy += validator.committee.stake(received.author)
+    if proposerSlot.certifiedBy > 2/3:
+      proposerSlot.status = ProposalStatus.toCommit
+
 func receive*(validator: Validator, signed: SignedBlock) =
   validator.round.slots[signed.blck.author] = ProposerSlot.init(signed.blck)
   validator.updateSkipped(signed.blck)
+  validator.updateCertified(signed.blck)
 
 func round(validator: Validator, number: uint64): auto =
   var round = validator.round
