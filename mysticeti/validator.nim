@@ -38,6 +38,15 @@ func identifier*(validator: Validator): auto =
 func round*(validator: Validator): uint64 =
   validator.round.number
 
+func wave(validator: Validator): auto =
+  # A wave consists of 3 rounds: proposing -> supporting -> certifying
+  type Round = typeof(validator.round)
+  let certifying = validator.round
+  if supporting =? certifying.previous:
+    if proposing =? supporting.previous:
+      return some (proposing, supporting, certifying)
+  none (Round, Round, Round)
+
 func nextRound*(validator: Validator) =
   let previous = validator.round
   validator.round = Round.new(previous.number + 1, previous)
@@ -48,11 +57,11 @@ func skips(blck: Block, round: uint64, author: Identifier): bool =
       return false
   true
 
-func updateSkipped(validator: Validator, received: Block) =
+func updateSkipped(validator: Validator, supporter: Block) =
   if previous =? validator.round.previous:
     for (id, slot) in previous.slots.mpairs:
-      if received.skips(previous.number, id):
-        slot.skippedBy += validator.committee.stake(received.author)
+      if supporter.skips(previous.number, id):
+        slot.skippedBy += validator.committee.stake(supporter.author)
       if slot.skippedBy > 2/3:
         slot.status = ProposalStatus.toSkip
 
@@ -62,21 +71,17 @@ func supports(blck: Block, round: uint64, author: Identifier): bool =
       return true
   false
 
-func updateCertified(validator: Validator, received: Block) =
-  # three rounds: proposing -> supporting -> certifying
-  let certifying = validator.round
-  without supporting =? certifying.previous:
-    return
-  without proposing =? supporting.previous:
+func updateCertified(validator: Validator, certificate: Block) =
+  without (proposing, supporting, _) =? validator.wave:
     return
   for (proposerId, proposerSlot) in proposing.slots.mpairs:
     var support: Stake
     for (supporterId, supporterSlot) in supporting.slots.pairs:
-      if received.supports(supporting.number, supporterId):
+      if certificate.supports(supporting.number, supporterId):
         if supporterSlot.proposal.supports(proposing.number, proposerId):
           support += validator.committee.stake(supporterId)
     if support > 2/3:
-      proposerSlot.certifiedBy += validator.committee.stake(received.author)
+      proposerSlot.certifiedBy += validator.committee.stake(certificate.author)
     if proposerSlot.certifiedBy > 2/3:
       proposerSlot.status = ProposalStatus.toCommit
 
