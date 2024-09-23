@@ -39,12 +39,12 @@ func round*(validator: Validator): uint64 =
   validator.round.number
 
 func wave(validator: Validator): auto =
-  # A wave consists of 3 rounds: proposing -> supporting -> certifying
+  # A wave consists of 3 rounds: proposing -> voting -> certifying
   type Round = typeof(validator.round)
   let certifying = validator.round
-  if supporting =? certifying.previous:
-    if proposing =? supporting.previous:
-      return some (proposing, supporting, certifying)
+  if voting =? certifying.previous:
+    if proposing =? voting.previous:
+      return some (proposing, voting, certifying)
   none (Round, Round, Round)
 
 func nextRound*(validator: Validator) =
@@ -72,14 +72,14 @@ func supports(blck: Block, round: uint64, author: Identifier): bool =
   false
 
 func updateCertified(validator: Validator, certificate: Block) =
-  without (proposing, supporting, _) =? validator.wave:
+  without (proposing, voting, _) =? validator.wave:
     return
   for (proposerId, proposerSlot) in proposing.slots.mpairs:
     var support: Stake
-    for (supporterId, supporterSlot) in supporting.slots.pairs:
-      if certificate.supports(supporting.number, supporterId):
-        if supporterSlot.proposal.supports(proposing.number, proposerId):
-          support += validator.committee.stake(supporterId)
+    for (voterId, voterSlot) in voting.slots.pairs:
+      if certificate.supports(voting.number, voterId):
+        if voterSlot.proposal.supports(proposing.number, proposerId):
+          support += validator.committee.stake(voterId)
     if support > 2/3:
       proposerSlot.certifiedBy += validator.committee.stake(certificate.author)
     if proposerSlot.certifiedBy > 2/3:
