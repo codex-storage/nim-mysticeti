@@ -51,25 +51,19 @@ func nextRound*(validator: Validator) =
   let previous = validator.round
   validator.round = Round.new(previous.number + 1, previous)
 
-func skips(blck: Block, round: uint64, author: Identifier): bool =
-  for parent in blck.parents:
-    if parent.round == round and parent.author == author:
-      return false
-  true
-
-func updateSkipped(validator: Validator, supporter: Block) =
-  if previous =? validator.round.previous:
-    for (id, slot) in previous.slots.mpairs:
-      if supporter.skips(previous.number, id):
-        slot.skippedBy += validator.committee.stake(supporter.author)
-      if slot.skippedBy > 2/3:
-        slot.status = ProposalStatus.toSkip
-
-func supports(blck: Block, round: uint64, author: Identifier): bool =
+func hasParent(blck: Block, round: uint64, author: Identifier): bool =
   for parent in blck.parents:
     if parent.round == round and parent.author == author:
       return true
   false
+
+func updateSkipped(validator: Validator, supporter: Block) =
+  if previous =? validator.round.previous:
+    for (id, slot) in previous.slots.mpairs:
+      if not supporter.hasParent(previous.number, id):
+        slot.skippedBy += validator.committee.stake(supporter.author)
+      if slot.skippedBy > 2/3:
+        slot.status = ProposalStatus.toSkip
 
 func updateCertified(validator: Validator, certificate: Block) =
   without (proposing, voting, _) =? validator.wave:
@@ -77,8 +71,8 @@ func updateCertified(validator: Validator, certificate: Block) =
   for (proposerId, proposerSlot) in proposing.slots.mpairs:
     var support: Stake
     for (voterId, voterSlot) in voting.slots.pairs:
-      if certificate.supports(voting.number, voterId):
-        if voterSlot.proposal.supports(proposing.number, proposerId):
+      if certificate.hasParent(voting.number, voterId):
+        if voterSlot.proposal.hasParent(proposing.number, proposerId):
           support += validator.committee.stake(voterId)
     if support > 2/3:
       proposerSlot.certifiedBy += validator.committee.stake(certificate.author)
