@@ -1,22 +1,23 @@
 import ./signing
 import ./hashing
+import ./committee
 
 type Transaction* = object
 
 type
   Block*[Signing, Hashing] = object
-    author: Identifier[Signing]
+    author: CommitteeMember
     round: uint64
     parents: seq[BlockId[Signing, Hashing]]
     transactions: seq[Transaction]
   BlockId*[Signing, Hashing] = object
-    author: Identifier[Signing]
+    author: CommitteeMember
     round: uint64
     hash: Hash[Hashing]
 
 func new*(
   _: type Block,
-  author: Identifier,
+  author: CommitteeMember,
   round: uint64,
   parents: seq[BlockId],
   transactions: seq[Transaction]

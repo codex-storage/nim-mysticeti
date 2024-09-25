@@ -1,5 +1,6 @@
 import std/unittest
 import pkg/questionable
+import pkg/questionable/results
 import mysticeti
 import ./examples
 import ./mocks
@@ -14,7 +15,7 @@ suite "Validator":
   setup:
     let identity = Identity.init()
     let committee = Committee.new({identity.identifier: 1/1})
-    validator = Validator.new(identity, committee)
+    validator = !Validator.new(identity, committee)
 
   test "starts at round 0":
     check validator.round == 0
@@ -28,7 +29,7 @@ suite "Validator":
 
   test "validators sign their proposals":
     let proposal = validator.propose(seq[Transaction].example)
-    check proposal.blck.author == validator.identifier
+    check proposal.blck.author == validator.membership
     check proposal.signer == validator.identifier
 
   test "validator cannot propose more than once in a round":

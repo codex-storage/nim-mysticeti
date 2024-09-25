@@ -1,5 +1,7 @@
+import std/hashes
 import std/tables
 
+export hashes
 export tables
 
 import pkg/questionable

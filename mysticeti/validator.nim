@@ -7,11 +7,12 @@ type
   Validator*[Signing, Hashing] = ref object
     identity: Identity[Signing]
     committee: Committee[Signing]
+    membership: CommitteeMember
     first, last: Round[Signing, Hashing]
   Round[Signing, Hashing] = ref object
     number: uint64
     previous, next: ?Round[Signing, Hashing]
-    slots: Table[Identifier[Signing], ProposerSlot[Signing, Hashing]]
+    slots: Table[CommitteeMember, ProposerSlot[Signing, Hashing]]
   ProposerSlot[Signing, Hashing] = object
     proposal: Block[Signing, Hashing]
     skippedBy: Stake
@@ -23,9 +24,17 @@ type
     commit
     committed
 
-func new*(T: type Validator; identity: Identity, committee: Committee): T =
+func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
   let round = Round[T.Signing, T.Hashing](number: 0)
-  T(identity: identity, committee: committee, first: round, last: round)
+  without membership =? committee.membership(identity.identifier):
+    return T.failure "identity is not a member of the committee"
+  success T(
+    identity: identity,
+    committee: committee,
+    membership: membership,
+    first: round,
+    last: round
+  )
 
 func new*(_: type Round, number: uint64, previous: Round): auto =
   Round(number: number, previous: some previous)
@@ -35,6 +44,9 @@ func init(_: type ProposerSlot, proposal: Block): auto =
 
 func identifier*(validator: Validator): auto =
   validator.identity.identifier
+
+func membership*(validator: Validator): CommitteeMember =
+  validator.membership
 
 func round*(validator: Validator): uint64 =
   validator.last.number
@@ -54,7 +66,7 @@ func nextRound*(validator: Validator) =
   validator.last = next
   previous.next = some next
 
-func hasParent(blck: Block, round: uint64, author: Identifier): bool =
+func hasParent(blck: Block, round: uint64, author: CommitteeMember): bool =
   for parent in blck.parents:
     if parent.round == round and parent.author == author:
       return true
@@ -83,18 +95,18 @@ func updateCertified(validator: Validator, certificate: Block) =
       proposerSlot.status = ProposalStatus.commit
 
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
-  assert validator.identifier notin validator.last.slots
+  assert validator.membership notin validator.last.slots
   var parents: seq[BlockId[Validator.Signing, Validator.Hashing]]
   if previous =? validator.last.previous:
-    for id in previous.slots.keys:
-      parents.add(previous.slots[id].proposal.id)
+    for slot in previous.slots.values:
+      parents.add(slot.proposal.id)
   let blck = Block.new(
-    author = validator.identifier,
+    author = validator.membership,
     round = validator.last.number,
     parents = parents,
     transactions = transactions
   )
-  validator.last.slots[validator.identifier] = ProposerSlot.init(blck)
+  validator.last.slots[validator.membership] = ProposerSlot.init(blck)
   validator.updateCertified(blck)
   validator.identity.sign(blck)
 

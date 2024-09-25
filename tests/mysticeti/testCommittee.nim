@@ -1,6 +1,7 @@
 import std/unittest
 import std/sequtils
 import pkg/questionable
+import pkg/questionable/results
 import mysticeti
 import ./examples
 import ./mocks
@@ -16,7 +17,7 @@ suite "Commitee of Validators":
     let identities = newSeqWith(4, Identity.init())
     let stakes = identities.mapIt( (it.identifier, 1/4) )
     let committee = Committee.new(stakes)
-    validators = identities.mapIt(Validator.new(it, committee))
+    validators = identities.mapIt(!Validator.new(it, committee))
 
   proc nextRound =
     for validator in validators:
@@ -26,7 +27,7 @@ suite "Commitee of Validators":
     let proposals = validators.mapIt(it.propose(seq[Transaction].example))
     for validator in validators:
       for proposal in proposals:
-        if proposal.blck.author != validator.identifier:
+        if proposal.blck.author != validator.membership:
           validator.receive(proposal)
     proposals
 

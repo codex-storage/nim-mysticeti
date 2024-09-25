@@ -4,6 +4,7 @@ export validator.Validator
 export validator.ProposalStatus
 export validator.new
 export validator.identifier
+export validator.membership
 export validator.round
 export validator.nextRound
 export validator.propose
@@ -15,6 +16,8 @@ import ./mysticeti/committee
 
 export committee.Committee
 export committee.new
+export committee.CommitteeMember
+export committee.`==`
 
 import ./mysticeti/blocks
 
