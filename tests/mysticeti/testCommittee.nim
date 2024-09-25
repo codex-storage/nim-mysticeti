@@ -51,7 +51,7 @@ suite "Commitee of Validators":
     validators[0].receive(validators[2].propose(seq[Transaction].example))
     check validators[0].status(proposal) == some ProposalStatus.undecided
     validators[0].receive(validators[3].propose(seq[Transaction].example))
-    check validators[0].status(proposal) == some ProposalStatus.toSkip
+    check validators[0].status(proposal) == some ProposalStatus.skip
 
   test "commits blocks that have >2f certificates":
     # First round: proposing
@@ -65,4 +65,24 @@ suite "Commitee of Validators":
     validators[0].receive(validators[1].propose(seq[Transaction].example))
     check validators[0].status(proposals[0]) == some ProposalStatus.undecided
     validators[0].receive(validators[2].propose(seq[Transaction].example))
-    check validators[0].status(proposals[0]) == some ProposalStatus.toCommit
+    check validators[0].status(proposals[0]) == some ProposalStatus.commit
+
+  test "can iterate over the list of committed blocks":
+    let first = exchangeProposals().mapIt(it.blck)
+    nextRound()
+    let second = exchangeProposals().mapIt(it.blck)
+    nextRound()
+    discard exchangeProposals()
+
+    let committedFirst = toSeq(validators[0].committed())
+    check committedFirst.len == first.len
+    for blck in first:
+      check blck in committedFirst
+
+    nextRound()
+    discard exchangeProposals()
+
+    let committedSecond = toSeq(validators[0].committed())
+    check committedSecond.len == second.len
+    for blck in second:
+      check blck in committedSecond

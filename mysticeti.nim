@@ -9,6 +9,7 @@ export validator.nextRound
 export validator.propose
 export validator.receive
 export validator.status
+export validator.committed
 
 import ./mysticeti/committee
 

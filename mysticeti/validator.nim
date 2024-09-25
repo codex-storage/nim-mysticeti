@@ -17,10 +17,11 @@ type
     skippedBy: Stake
     certifiedBy: Stake
     status: ProposalStatus
-  ProposalStatus* = enum
+  ProposalStatus* {.pure.} = enum
     undecided
-    toSkip
-    toCommit
+    skip
+    commit
+    committed
 
 func new*(T: type Validator; identity: Identity, committee: Committee): T =
   let round = Round[T.Signing, T.Hashing](number: 0)
@@ -65,7 +66,7 @@ func updateSkipped(validator: Validator, supporter: Block) =
       if not supporter.hasParent(previous.number, id):
         slot.skippedBy += validator.committee.stake(supporter.author)
       if slot.skippedBy > 2/3:
-        slot.status = ProposalStatus.toSkip
+        slot.status = ProposalStatus.skip
 
 func updateCertified(validator: Validator, certificate: Block) =
   without (proposing, voting, _) =? validator.wave:
@@ -79,7 +80,7 @@ func updateCertified(validator: Validator, certificate: Block) =
     if support > 2/3:
       proposerSlot.certifiedBy += validator.committee.stake(certificate.author)
     if proposerSlot.certifiedBy > 2/3:
-      proposerSlot.status = ProposalStatus.toCommit
+      proposerSlot.status = ProposalStatus.commit
 
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   assert validator.identifier notin validator.last.slots
@@ -118,3 +119,19 @@ func status*(validator: Validator, blck: Block): ?ProposalStatus =
 
 func status*(validator: Validator, proposal: SignedBlock): ?ProposalStatus =
   validator.status(proposal.blck)
+
+iterator committed*(validator: Validator): auto =
+  var done = false
+  var current = some validator.first
+  while not done and round =? current:
+    for slot in round.slots.mvalues:
+      case slot.status
+      of ProposalStatus.undecided:
+        done = true
+        break
+      of ProposalStatus.skip, ProposalStatus.committed:
+        discard
+      of ProposalStatus.commit:
+        slot.status = ProposalStatus.committed
+        yield slot.proposal
+    current = round.next
