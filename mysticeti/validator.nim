@@ -13,7 +13,7 @@ type
     number: uint64
     previous, next: ?Round[Signing, Hashing]
     slots: Table[CommitteeMember, ProposerSlot[Signing, Hashing]]
-  ProposerSlot[Signing, Hashing] = object
+  ProposerSlot[Signing, Hashing] = ref object
     proposal: Block[Signing, Hashing]
     skippedBy: Stake
     certifiedBy: Stake
@@ -145,6 +145,6 @@ iterator committed*(validator: Validator): auto =
       of ProposalStatus.skip, ProposalStatus.committed:
         discard
       of ProposalStatus.commit:
-        round.slots[member].status = ProposalStatus.committed
+        slot.status = ProposalStatus.committed
         yield slot.proposal
     current = round.next
