@@ -1,5 +1,6 @@
 import std/unittest
 import std/sequtils
+import std/algorithm
 import pkg/questionable
 import pkg/questionable/results
 import mysticeti
@@ -44,9 +45,9 @@ suite "Commitee of Validators":
     check validators[0].status(proposal) == some ProposalStatus.undecided
 
   test "skips blocks that are ignored by >2f validators":
-    # First round: other validators do not receive this proposal
+    # first round: other validators do not receive this proposal
     let proposal = validators[0].propose(seq[Transaction].example)
-    # Second round: voting
+    # second round: voting
     nextRound()
     validators[0].receive(validators[1].propose(seq[Transaction].example))
     validators[0].receive(validators[2].propose(seq[Transaction].example))
@@ -55,12 +56,12 @@ suite "Commitee of Validators":
     check validators[0].status(proposal) == some ProposalStatus.skip
 
   test "commits blocks that have >2f certificates":
-    # First round: proposing
+    # first round: proposing
     let proposals = exchangeProposals()
-    # Second round: voting
+    # second round: voting
     nextRound()
     discard exchangeProposals()
-    # Third round: certifying
+    # third round: certifying
     nextRound()
     discard validators[0].propose(seq[Transaction].example)
     validators[0].receive(validators[1].propose(seq[Transaction].example))
@@ -69,21 +70,17 @@ suite "Commitee of Validators":
     check validators[0].status(proposals[0]) == some ProposalStatus.commit
 
   test "can iterate over the list of committed blocks":
+    # blocks proposed in first round, in order of committee members
     let first = exchangeProposals().mapIt(it.blck)
     nextRound()
-    let second = exchangeProposals().mapIt(it.blck)
+    # blocks proposed in second round, round-robin order
+    let second = exchangeProposals().mapIt(it.blck).rotatedLeft(1)
+    nextRound()
+    # certify blocks from the first round
+    discard exchangeProposals()
+    check toSeq(validators[0].committed()) == first
+    # certify blocks from the second round
     nextRound()
     discard exchangeProposals()
+    check toSeq(validators[0].committed()) == second
 
-    let committedFirst = toSeq(validators[0].committed())
-    check committedFirst.len == first.len
-    for blck in first:
-      check blck in committedFirst
-
-    nextRound()
-    discard exchangeProposals()
-
-    let committedSecond = toSeq(validators[0].committed())
-    check committedSecond.len == second.len
-    for blck in second:
-      check blck in committedSecond

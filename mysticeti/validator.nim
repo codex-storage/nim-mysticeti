@@ -136,7 +136,8 @@ iterator committed*(validator: Validator): auto =
   var done = false
   var current = some validator.first
   while not done and round =? current:
-    for slot in round.slots.mvalues:
+    for member in validator.committee.ordered(round.number):
+      let slot = round.slots[member]
       case slot.status
       of ProposalStatus.undecided:
         done = true
@@ -144,6 +145,6 @@ iterator committed*(validator: Validator): auto =
       of ProposalStatus.skip, ProposalStatus.committed:
         discard
       of ProposalStatus.commit:
-        slot.status = ProposalStatus.committed
+        round.slots[member].status = ProposalStatus.committed
         yield slot.proposal
     current = round.next
