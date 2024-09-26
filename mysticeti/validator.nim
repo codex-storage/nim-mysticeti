@@ -66,6 +66,16 @@ func nextRound*(validator: Validator) =
   validator.last = next
   previous.next = some next
 
+func remove(validator: Validator, round: Round) =
+  if previous =? round.previous:
+    previous.next = round.next
+  else:
+    validator.first = !round.next
+  if next =? round.next:
+    next.previous = round.previous
+  else:
+    validator.last = !round.previous
+
 func hasParent(blck: Block, round: uint64, author: CommitteeMember): bool =
   for parent in blck.parents:
     if parent.round == round and parent.author == author:
@@ -147,4 +157,6 @@ iterator committed*(validator: Validator): auto =
       of ProposalStatus.commit:
         slot.status = ProposalStatus.committed
         yield slot.proposal
-    current = round.next
+    if not done:
+      validator.remove(round)
+      current = round.next
