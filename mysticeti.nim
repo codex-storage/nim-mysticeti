@@ -1,7 +1,7 @@
 import ./mysticeti/validator
 
 export validator.Validator
-export validator.ProposalStatus
+export validator.SlotStatus
 export validator.new
 export validator.identifier
 export validator.membership

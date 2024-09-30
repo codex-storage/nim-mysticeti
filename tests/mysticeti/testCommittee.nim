@@ -42,7 +42,7 @@ suite "Commitee of Validators":
   test "by default received proposals are undecided":
     let proposal = validators[1].propose(seq[Transaction].example)
     validators[0].receive(proposal)
-    check validators[0].status(proposal) == some ProposalStatus.undecided
+    check validators[0].status(proposal) == some SlotStatus.undecided
 
   test "skips blocks that are ignored by >2f validators":
     # first round: other validators do not receive this proposal
@@ -51,9 +51,9 @@ suite "Commitee of Validators":
     nextRound()
     validators[0].receive(validators[1].propose(seq[Transaction].example))
     validators[0].receive(validators[2].propose(seq[Transaction].example))
-    check validators[0].status(proposal) == some ProposalStatus.undecided
+    check validators[0].status(proposal) == some SlotStatus.undecided
     validators[0].receive(validators[3].propose(seq[Transaction].example))
-    check validators[0].status(proposal) == some ProposalStatus.skip
+    check validators[0].status(proposal) == some SlotStatus.skip
 
   test "commits blocks that have >2f certificates":
     # first round: proposing
@@ -65,9 +65,9 @@ suite "Commitee of Validators":
     nextRound()
     discard validators[0].propose(seq[Transaction].example)
     validators[0].receive(validators[1].propose(seq[Transaction].example))
-    check validators[0].status(proposals[0]) == some ProposalStatus.undecided
+    check validators[0].status(proposals[0]) == some SlotStatus.undecided
     validators[0].receive(validators[2].propose(seq[Transaction].example))
-    check validators[0].status(proposals[0]) == some ProposalStatus.commit
+    check validators[0].status(proposals[0]) == some SlotStatus.commit
 
   test "can iterate over the list of committed blocks":
     # blocks proposed in first round, in order of committee members

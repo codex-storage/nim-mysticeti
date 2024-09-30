@@ -17,8 +17,8 @@ type
     proposal: Block[Signing, Hashing]
     skippedBy: Stake
     certifiedBy: Stake
-    status: ProposalStatus
-  ProposalStatus* {.pure.} = enum
+    status: SlotStatus
+  SlotStatus* {.pure.} = enum
     undecided
     skip
     commit
@@ -88,7 +88,7 @@ func updateSkipped(validator: Validator, supporter: Block) =
       if not supporter.hasParent(previous.number, id):
         slot.skippedBy += validator.committee.stake(supporter.author)
       if slot.skippedBy > 2/3:
-        slot.status = ProposalStatus.skip
+        slot.status = SlotStatus.skip
 
 func updateCertified(validator: Validator, certificate: Block) =
   without (proposing, voting, _) =? validator.wave:
@@ -102,7 +102,7 @@ func updateCertified(validator: Validator, certificate: Block) =
     if support > 2/3:
       proposerSlot.certifiedBy += validator.committee.stake(certificate.author)
     if proposerSlot.certifiedBy > 2/3:
-      proposerSlot.status = ProposalStatus.commit
+      proposerSlot.status = SlotStatus.commit
 
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   assert validator.membership notin validator.last.slots
@@ -132,14 +132,14 @@ func round(validator: Validator, number: uint64): auto =
   if round.number == number:
     return some round
 
-func status*(validator: Validator, blck: Block): ?ProposalStatus =
+func status*(validator: Validator, blck: Block): ?SlotStatus =
   if round =? round(validator, blck.round) and blck.author in round.slots:
     let slot = round.slots[blck.author]
     some slot.status
   else:
-    none ProposalStatus
+    none SlotStatus
 
-func status*(validator: Validator, proposal: SignedBlock): ?ProposalStatus =
+func status*(validator: Validator, proposal: SignedBlock): ?SlotStatus =
   validator.status(proposal.blck)
 
 iterator committed*(validator: Validator): auto =
@@ -149,13 +149,13 @@ iterator committed*(validator: Validator): auto =
     for member in validator.committee.ordered(round.number):
       let slot = round.slots[member]
       case slot.status
-      of ProposalStatus.undecided:
+      of SlotStatus.undecided:
         done = true
         break
-      of ProposalStatus.skip, ProposalStatus.committed:
+      of SlotStatus.skip, SlotStatus.committed:
         discard
-      of ProposalStatus.commit:
-        slot.status = ProposalStatus.committed
+      of SlotStatus.commit:
+        slot.status = SlotStatus.committed
         yield slot.proposal
     if not done:
       validator.remove(round)
