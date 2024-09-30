@@ -18,6 +18,9 @@ func new*(_: type Committee, stakes: openArray[(Identifier, Stake)]): auto =
     committee.stakes.add(stake)
   committee
 
+func size*(committee: Committee): int =
+  committee.members.len
+
 func membership*(committee: Committee, identifier: Identifier): ?CommitteeMember =
   let index = committee.members.find(identifier)
   if index < 0:
