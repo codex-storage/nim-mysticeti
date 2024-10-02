@@ -84,3 +84,36 @@ suite "Commitee of Validators":
     discard exchangeProposals()
     check toSeq(validators[0].committed()) == second
 
+  test "commits blocks using the indirect decision rule":
+    # first round: proposal is seen by majority
+    let proposal = validators[0].propose(seq[Transaction].example)
+    for index in 1..3:
+      discard validators[index].propose(seq[Transaction].example)
+    validators[1].receive(proposal)
+    validators[2].receive(proposal)
+    # second round: majority votes are only seen by first validator
+    nextRound()
+    discard validators[0].propose(seq[Transaction].example)
+    let vote2 = validators[1].propose(seq[Transaction].example)
+    let vote3 = validators[2].propose(seq[Transaction].example)
+    discard validators[3].propose(seq[Transaction].example)
+    validators[0].receive(vote2)
+    validators[0].receive(vote3)
+    # third round: only first validator creates a certificate
+    nextRound()
+    let certificate = validators[0].propose(seq[Transaction].example)
+    for index in 1..3:
+      discard validators[index].propose(seq[Transaction].example)
+    validators[1].receive(certificate)
+    validators[2].receive(certificate)
+    validators[3].receive(certificate)
+    # fourth round: anchors
+    nextRound()
+    discard exchangeProposals()
+    # fifth round: voting on anchors
+    nextRound()
+    discard exchangeProposals()
+    # sixth round: certifying anchors
+    nextRound()
+    discard exchangeProposals()
+    check toSeq(validators[0].committed()).?[0] == some proposal.blck

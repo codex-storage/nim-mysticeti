@@ -20,6 +20,7 @@ type
   Proposal[Signing, Hashing] = ref object
     blck: Block[Signing, Hashing]
     certifiedBy: Stake
+    certificates: seq[BlockId[Signing, Hashing]]
   SlotStatus* {.pure.} = enum
     undecided
     skip
@@ -112,6 +113,7 @@ func updateCertified(validator: Validator, certificate: Block) =
               support += validator.committee.stake(vote.blck.author)
       if support > 2/3:
         proposal.certifiedBy += validator.committee.stake(certificate.author)
+        proposal.certificates.add(certificate.id)
       if proposal.certifiedBy > 2/3:
         proposerSlot.status = SlotStatus.commit
 
@@ -153,12 +155,60 @@ func status*(validator: Validator, blck: Block): ?SlotStatus =
 func status*(validator: Validator, proposal: SignedBlock): ?SlotStatus =
   validator.status(proposal.blck)
 
+func findAnchor(validator: Validator, round: Round): auto =
+  var next = round.next.?next.?next
+  while current =? next:
+    for member in validator.committee.ordered(current.number):
+      let slot = current[member]
+      if slot.status in [SlotStatus.undecided, SlotStatus.commit]:
+        return some slot
+    next = current.next
+
+func searchBackwards(round: Round, blockId: BlockId): auto =
+  var current = round
+  while current.number > blockId.round and previous =? current.previous:
+    current = previous
+  if current.number == blockId.round:
+    let slot = current[blockId.author]
+    for proposal in slot.proposals:
+      let blck = proposal.blck
+      if blck.id == blockId:
+        return some blck
+
+func certifiedProposal(slot: ProposerSlot): auto =
+  if slot.status in [SlotStatus.commit, SlotStatus.committed]:
+    for proposal in slot.proposals:
+      if proposal.certifiedBy > 2/3:
+        return some proposal
+
+func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
+  without anchor =? validator.findAnchor(round):
+    return
+  without anchorProposal =? anchor.certifiedProposal:
+    return
+  var todo = anchorProposal.blck.parents
+  while todo.len > 0:
+    let parent = todo.pop()
+    if parent.round < round.number + 2:
+      continue
+    for slotProposal in slot.proposals:
+      if parent in slotProposal.certificates:
+        slotProposal.certifiedBy = anchorProposal.certifiedBy
+        slot.status = SlotStatus.commit
+        return
+      without parentBlock =? round.searchBackwards(parent):
+        discard
+      todo.add(parentBlock.parents)
+  slot.status = SlotStatus.skip
+
 iterator committed*(validator: Validator): auto =
   var done = false
   var current = some validator.first
   while not done and round =? current:
     for member in validator.committee.ordered(round.number):
       let slot = round[member]
+      if slot.status == SlotStatus.undecided:
+        validator.updateIndirect(slot, round)
       case slot.status
       of SlotStatus.undecided:
         done = true
@@ -167,9 +217,9 @@ iterator committed*(validator: Validator): auto =
         discard
       of SlotStatus.commit:
         slot.status = SlotStatus.committed
-        for proposal in slot.proposals:
-          if proposal.certifiedBy > 2/3:
-            yield proposal.blck
+        without proposal =? slot.certifiedProposal:
+          raiseAssert "slot state is 'commit', but no proposal is certified"
+        yield proposal.blck
     if not done:
       validator.remove(round)
       current = round.next
