@@ -5,12 +5,12 @@ import ./committee
 type Transaction* = object
 
 type
-  Block*[Signing, Hashing] = object
+  Block*[Hashing] = object
     author: CommitteeMember
     round: uint64
-    parents: seq[BlockId[Signing, Hashing]]
+    parents: seq[BlockId[Hashing]]
     transactions: seq[Transaction]
-  BlockId*[Signing, Hashing] = object
+  BlockId*[Hashing] = object
     author: CommitteeMember
     round: uint64
     hash: Hash[Hashing]
@@ -22,7 +22,7 @@ func new*(
   parents: seq[BlockId],
   transactions: seq[Transaction]
 ): auto =
-  Block[BlockId.Signing, BlockId.Hashing](
+  Block[BlockId.Hashing](
     author: author,
     round: round,
     parents: parents,
@@ -42,18 +42,18 @@ func toBytes(blck: Block): seq[byte] =
   cast[seq[byte]]($blck) # TODO: proper serialization
 
 func id*(blck: Block): auto =
-  BlockId[Block.Signing, Block.Hashing](
+  BlockId[Block.Hashing](
     author: blck.author,
     round: blck.round,
     hash: Block.Hashing.hash(blck.toBytes)
   )
 
 type SignedBlock*[Signing, Hashing] = object
-  blck: Block[Signing, Hashing]
+  blck: Block[Hashing]
   signature: Signature[Signing]
 
 func new*(_: type SignedBlock, blck: Block, signature: Signature): auto =
-  SignedBlock[Block.Signing, Block.Hashing](blck: blck, signature: signature)
+  SignedBlock[Signature.Signing, Block.Hashing](blck: blck, signature: signature)
 
 func blck*(signed: SignedBlock): auto =
   signed.blck

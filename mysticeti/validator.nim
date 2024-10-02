@@ -8,19 +8,19 @@ type
     identity: Identity[Signing]
     committee: Committee[Signing]
     membership: CommitteeMember
-    first, last: Round[Signing, Hashing]
-  Round[Signing, Hashing] = ref object
+    first, last: Round[Hashing]
+  Round[Hashing] = ref object
     number: uint64
-    previous, next: ?Round[Signing, Hashing]
-    slots: seq[ProposerSlot[Signing, Hashing]]
-  ProposerSlot[Signing, Hashing] = ref object
-    proposals: seq[Proposal[Signing, Hashing]]
+    previous, next: ?Round[Hashing]
+    slots: seq[ProposerSlot[Hashing]]
+  ProposerSlot[Hashing] = ref object
+    proposals: seq[Proposal[Hashing]]
     skippedBy: Stake
     status: SlotStatus
-  Proposal[Signing, Hashing] = ref object
-    blck: Block[Signing, Hashing]
+  Proposal[Hashing] = ref object
+    blck: Block[Hashing]
     certifiedBy: Stake
-    certificates: seq[BlockId[Signing, Hashing]]
+    certificates: seq[BlockId[Hashing]]
   SlotStatus* {.pure.} = enum
     undecided
     skip
@@ -28,12 +28,12 @@ type
     committed
 
 func new*(T: type Round, number: uint64, committee: Committee): T =
-  type Slot = ProposerSlot[T.Signing, T.Hashing]
+  type Slot = ProposerSlot[T.Hashing]
   let slots = newSeqWith(committee.size, Slot.new())
   T(number: number, slots: slots)
 
 func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
-  let round = Round[T.Signing, T.Hashing].new(0, committee)
+  let round = Round[T.Hashing].new(0, committee)
   without membership =? committee.membership(identity.identifier):
     return T.failure "identity is not a member of the committee"
   success T(
@@ -48,7 +48,7 @@ func `[]`(round: Round, member: CommitteeMember): auto =
   round.slots[int(member)]
 
 func init(_: type Proposal, blck: Block): auto =
-  Proposal[Block.Signing, Block.Hashing](blck: blck)
+  Proposal[Block.Hashing](blck: blck)
 
 func identifier*(validator: Validator): auto =
   validator.identity.identifier
@@ -119,7 +119,7 @@ func updateCertified(validator: Validator, certificate: Block) =
 
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   assert validator.last[validator.membership].proposals.len == 0
-  var parents: seq[BlockId[Validator.Signing, Validator.Hashing]]
+  var parents: seq[BlockId[Validator.Hashing]]
   if previous =? validator.last.previous:
     for slot in previous.slots:
       if slot.proposals.len == 1:
