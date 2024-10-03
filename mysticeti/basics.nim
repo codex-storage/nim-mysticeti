@@ -1,7 +1,5 @@
-import std/hashes
 import std/sequtils
 
-export hashes
 export sequtils
 
 import pkg/questionable

@@ -1,15 +1,15 @@
 import ./basics
 import ./signing
+import ./committee/members
+
+export members.CommitteeMember
+export members.`==`
 
 type
   Committee*[Signing] = ref object
     members: seq[Identifier[Signing]]
     stakes: seq[Stake]
-  CommitteeMember* = distinct int
   Stake* = float64
-
-proc `==`*(a, b: CommitteeMember): bool {.borrow.}
-proc hash*(member: CommitteeMember): Hash {.borrow.}
 
 func new*(_: type Committee, stakes: openArray[(Identifier, Stake)]): auto =
   var committee = Committee[Identifier.Signing]()
