@@ -35,6 +35,7 @@ export blocks.signer
 import ./mysticeti/signing
 
 export signing.Identity
+export signing.Identifier
 export signing.init
 export signing.identifier
 export signing.`$`
