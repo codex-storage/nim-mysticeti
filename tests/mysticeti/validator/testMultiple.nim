@@ -4,10 +4,10 @@ import std/algorithm
 import pkg/questionable
 import pkg/questionable/results
 import mysticeti
-import ./examples
-import ./mocks
+import ../examples
+import ../mocks
 
-suite "Commitee of Validators":
+suite "Multiple Validators":
 
   type Validator = mysticeti.Validator[MockSigning, MockHashing]
   type Identity = mysticeti.Identity[MockSigning]
