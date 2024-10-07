@@ -18,6 +18,7 @@ type
     skippedBy: Stake
     status: SlotStatus
   Proposal[Hashing] = ref object
+    slot: ProposerSlot[Hashing]
     blck: Block[Hashing]
     certifiedBy: Stake
     certificates: seq[BlockId[Hashing]]
@@ -47,8 +48,15 @@ func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
 func `[]`(round: Round, member: CommitteeMember): auto =
   round.slots[int(member)]
 
-func init(_: type Proposal, blck: Block): auto =
-  Proposal[Block.Hashing](blck: blck)
+func add(round: Round, blck: Block): auto =
+  if slot =? round[blck.author]:
+    let proposal = Proposal[Block.Hashing](slot: slot, blck: blck)
+    slot.proposals.add(proposal)
+
+iterator proposals(round: Round): auto =
+  for slot in round.slots:
+    for proposal in slot.proposals:
+      yield proposal
 
 func identifier*(validator: Validator): auto =
   validator.identity.identifier
@@ -103,19 +111,17 @@ func updateSkipped(validator: Validator, supporter: Block) =
 func updateCertified(validator: Validator, certificate: Block) =
   without (proposing, voting, _) =? validator.wave:
     return
-  for proposerSlot in proposing.slots:
-    for proposal in proposerSlot.proposals:
-      var support: Stake
-      for voterSlot in voting.slots:
-        for vote in voterSlot.proposals:
-          if proposal.blck.id in vote.blck.parents:
-            if vote.blck.id in certificate.parents:
-              support += validator.committee.stake(vote.blck.author)
-      if support > 2/3:
-        proposal.certifiedBy += validator.committee.stake(certificate.author)
-        proposal.certificates.add(certificate.id)
-      if proposal.certifiedBy > 2/3:
-        proposerSlot.status = SlotStatus.commit
+  for proposal in proposing.proposals:
+    var support: Stake
+    for vote in voting.proposals:
+      if proposal.blck.id in vote.blck.parents:
+        if vote.blck.id in certificate.parents:
+          support += validator.committee.stake(vote.blck.author)
+    if support > 2/3:
+      proposal.certifiedBy += validator.committee.stake(certificate.author)
+      proposal.certificates.add(certificate.id)
+    if proposal.certifiedBy > 2/3:
+      proposal.slot.status = SlotStatus.commit
 
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   assert validator.last[validator.membership].proposals.len == 0
@@ -130,12 +136,12 @@ proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
     parents = parents,
     transactions = transactions
   )
-  validator.last[validator.membership].proposals.add(Proposal.init(blck))
+  validator.last.add(blck)
   validator.updateCertified(blck)
   validator.identity.sign(blck)
 
 func receive*(validator: Validator, signed: SignedBlock) =
-  validator.last[signed.blck.author].proposals.add(Proposal.init(signed.blck))
+  validator.last.add(signed.blck)
   validator.updateSkipped(signed.blck)
   validator.updateCertified(signed.blck)
 
