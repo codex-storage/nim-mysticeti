@@ -29,6 +29,18 @@ func new*(
     transactions: transactions
   )
 
+func new*(
+  _: type BlockId,
+  author: CommitteeMember,
+  round: uint64,
+  hash: Hash
+): auto =
+  BlockId[Hash.Hashing](
+    author: author,
+    round: round,
+    hash: hash
+  )
+
 func author*(blck: Block | BlockId): auto =
   blck.author
 
@@ -38,7 +50,13 @@ func round*(blck: Block | BlockId): uint64 =
 func parents*(blck: Block): auto =
   blck.parents
 
-func toBytes(blck: Block): seq[byte] =
+func transactions*(blck: Block): auto =
+  blck.transactions
+
+func hash*(blck: BlockId): auto =
+  blck.hash
+
+func toBytes*(blck: Block): seq[byte] =
   cast[seq[byte]]($blck) # TODO: proper serialization
 
 func id*(blck: Block): auto =
