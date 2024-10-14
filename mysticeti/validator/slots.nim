@@ -21,6 +21,14 @@ type
 func proposals*(slot: ProposerSlot): auto =
   slot.proposals
 
+func proposal*(slot: ProposerSlot): auto =
+  if slot.proposals.len == 1:
+    return some slot.proposals[0]
+  if slot.status in [SlotStatus.commit, SlotStatus.committed]:
+    for proposal in slot.proposals:
+      if proposal.certifiedBy > 2/3:
+        return some proposal
+
 func status*(slot: ProposerSlot): auto =
   slot.status
 
@@ -29,12 +37,6 @@ func blck*(proposal: Proposal): auto =
 
 func certificates*(proposal: Proposal): auto =
   proposal.certificates
-
-func certifiedProposal*(slot: ProposerSlot): auto =
-  if slot.status in [SlotStatus.commit, SlotStatus.committed]:
-    for proposal in slot.proposals:
-      if proposal.certifiedBy > 2/3:
-        return some proposal
 
 func add*(slot: ProposerSlot, blck: Block) =
   let proposal = Proposal[Block.Hashing](slot: slot, blck: blck)
@@ -51,11 +53,10 @@ func skip*(slot: ProposerSlot) =
 
 func commit*(slot: ProposerSlot): auto =
   assert slot.status == SlotStatus.commit
-  for proposal in slot.proposals:
-    if proposal.certifiedBy > 2/3:
-      slot.status = SlotStatus.committed
-      return proposal.blck
-  raiseAssert "slot status is 'commit', but no proposal is certified by > 2/3 stake"
+  let proposal = !slot.proposal
+  assert proposal.certifiedBy > 2/3
+  slot.status = SlotStatus.committed
+  return proposal.blck
 
 func certifyBy*(proposal: Proposal, certificate: BlockId, stake: Stake) =
   proposal.certificates.add(certificate)

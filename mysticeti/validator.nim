@@ -169,7 +169,7 @@ func searchBackwards(round: Round, blockId: BlockId): auto =
 func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
   without anchor =? validator.findAnchor(round):
     return
-  without anchorProposal =? anchor.certifiedProposal:
+  without anchorProposal =? anchor.proposal:
     return
   var todo = anchorProposal.blck.parents
   while todo.len > 0:
