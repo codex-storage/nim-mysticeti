@@ -2,6 +2,9 @@ import ./basics
 import ./signing
 import ./committee
 import ./blocks
+import ./validator/slots
+
+export slots
 
 type
   Validator*[Signing, Hashing] = ref object
@@ -13,20 +16,6 @@ type
     number: uint64
     previous, next: ?Round[Hashing]
     slots: seq[ProposerSlot[Hashing]]
-  ProposerSlot[Hashing] = ref object
-    proposals: seq[Proposal[Hashing]]
-    skippedBy: Stake
-    status: SlotStatus
-  Proposal[Hashing] = ref object
-    slot: ProposerSlot[Hashing]
-    blck: Block[Hashing]
-    certifiedBy: Stake
-    certificates: seq[BlockId[Hashing]]
-  SlotStatus* {.pure.} = enum
-    undecided
-    skip
-    commit
-    committed
 
 func new*(T: type Round, number: uint64, committee: Committee): T =
   type Slot = ProposerSlot[T.Hashing]
@@ -50,8 +39,7 @@ func `[]`(round: Round, member: CommitteeMember): auto =
 
 func add(round: Round, blck: Block): auto =
   if slot =? round[blck.author]:
-    let proposal = Proposal[Block.Hashing](slot: slot, blck: blck)
-    slot.proposals.add(proposal)
+    slot.add(blck)
 
 iterator proposals(round: Round): auto =
   for slot in round.slots:
@@ -104,9 +92,8 @@ func updateSkipped(validator: Validator, supporter: Block) =
   if previous =? validator.last.previous:
     for (member, slot) in previous.slots.pairs:
       if supporter.skips(previous.number, CommitteeMember(member)):
-        slot.skippedBy += validator.committee.stake(supporter.author)
-      if slot.skippedBy > 2/3:
-        slot.status = SlotStatus.skip
+        let stake = validator.committee.stake(supporter.author)
+        slot.skipBy(stake)
 
 func updateCertified(validator: Validator, certificate: Block) =
   without (proposing, voting, _) =? validator.wave:
@@ -118,10 +105,8 @@ func updateCertified(validator: Validator, certificate: Block) =
         if vote.blck.id in certificate.parents:
           support += validator.committee.stake(vote.blck.author)
     if support > 2/3:
-      proposal.certifiedBy += validator.committee.stake(certificate.author)
-      proposal.certificates.add(certificate.id)
-    if proposal.certifiedBy > 2/3:
-      proposal.slot.status = SlotStatus.commit
+      let stake = validator.committee.stake(certificate.author)
+      proposal.certifyBy(certificate.id, stake)
 
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   assert validator.last[validator.membership].proposals.len == 0
@@ -181,12 +166,6 @@ func searchBackwards(round: Round, blockId: BlockId): auto =
       if blck.id == blockId:
         return some blck
 
-func certifiedProposal(slot: ProposerSlot): auto =
-  if slot.status in [SlotStatus.commit, SlotStatus.committed]:
-    for proposal in slot.proposals:
-      if proposal.certifiedBy > 2/3:
-        return some proposal
-
 func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
   without anchor =? validator.findAnchor(round):
     return
@@ -199,13 +178,12 @@ func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
       continue
     for slotProposal in slot.proposals:
       if parent in slotProposal.certificates:
-        slotProposal.certifiedBy = anchorProposal.certifiedBy
-        slot.status = SlotStatus.commit
+        slotProposal.certify(anchorProposal)
         return
       without parentBlock =? round.searchBackwards(parent):
         discard
       todo.add(parentBlock.parents)
-  slot.status = SlotStatus.skip
+  slot.skip()
 
 iterator committed*(validator: Validator): auto =
   var done = false
@@ -222,10 +200,7 @@ iterator committed*(validator: Validator): auto =
       of SlotStatus.skip, SlotStatus.committed:
         discard
       of SlotStatus.commit:
-        slot.status = SlotStatus.committed
-        without proposal =? slot.certifiedProposal:
-          raiseAssert "slot state is 'commit', but no proposal is certified"
-        yield proposal.blck
+        yield slot.commit()
     if not done:
       validator.remove(round)
       current = round.next
