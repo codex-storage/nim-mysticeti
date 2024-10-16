@@ -22,8 +22,6 @@ func proposals*(slot: ProposerSlot): auto =
   slot.proposals
 
 func proposal*(slot: ProposerSlot): auto =
-  if slot.proposals.len == 1:
-    return some slot.proposals[0]
   if slot.status in [SlotStatus.commit, SlotStatus.committed]:
     for proposal in slot.proposals:
       if proposal.certifiedBy > 2/3:

@@ -15,6 +15,7 @@ export validator.committed
 import ./mysticeti/committee
 
 export committee.Committee
+export committee.Stake
 export committee.new
 export committee.CommitteeMember
 export committee.`==`
