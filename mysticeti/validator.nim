@@ -11,6 +11,8 @@ type
     identity: Identity[Signing]
     committee: Committee[Signing]
     membership: CommitteeMember
+    rounds: Rounds[Hashing]
+  Rounds[Hashing] = object
     first, last: Round[Hashing]
   Round[Hashing] = ref object
     number: uint64
@@ -24,14 +26,14 @@ func new*(T: type Round, number: uint64, committee: Committee): T =
 
 func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
   let round = Round[T.Hashing].new(0, committee)
+  let rounds = Rounds[T.Hashing](first: round, last: round)
   without membership =? committee.membership(identity.identifier):
     return T.failure "identity is not a member of the committee"
   success T(
     identity: identity,
     committee: committee,
     membership: membership,
-    first: round,
-    last: round
+    rounds: rounds
   )
 
 func `[]`(round: Round, member: CommitteeMember): auto =
@@ -53,34 +55,34 @@ func membership*(validator: Validator): CommitteeMember =
   validator.membership
 
 func round*(validator: Validator): uint64 =
-  validator.last.number
+  validator.rounds.last.number
 
-func wave(validator: Validator): auto =
+func wave(rounds: Rounds): auto =
   # A wave consists of 3 rounds: proposing -> voting -> certifying
-  type Round = typeof(validator.last)
-  let certifying = validator.last
+  type Round = typeof(rounds.last)
+  let certifying = rounds.last
   if voting =? certifying.previous:
     if proposing =? voting.previous:
       return some (proposing, voting, certifying)
   none (Round, Round, Round)
 
 func nextRound*(validator: Validator) =
-  type Round = typeof(validator.last)
-  let previous = validator.last
+  type Round = typeof(validator.rounds.last)
+  let previous = validator.rounds.last
   let next = Round.new(previous.number + 1, validator.committee)
   next.previous = some previous
   previous.next = some next
-  validator.last = next
+  validator.rounds.last = next
 
-func remove(validator: Validator, round: Round) =
+func remove(rounds: var Rounds, round: Round) =
   if previous =? round.previous:
     previous.next = round.next
   else:
-    validator.first = !round.next
+    rounds.first = !round.next
   if next =? round.next:
     next.previous = round.previous
   else:
-    validator.last = !round.previous
+    rounds.last = !round.previous
 
 func skips(blck: Block, round: uint64, author: CommitteeMember): bool =
   for parent in blck.parents:
@@ -89,14 +91,14 @@ func skips(blck: Block, round: uint64, author: CommitteeMember): bool =
   true
 
 func updateSkipped(validator: Validator, supporter: Block) =
-  if previous =? validator.last.previous:
+  if previous =? validator.rounds.last.previous:
     for (member, slot) in previous.slots.pairs:
       if supporter.skips(previous.number, CommitteeMember(member)):
         let stake = validator.committee.stake(supporter.author)
         slot.skipBy(stake)
 
 func updateCertified(validator: Validator, certificate: Block) =
-  without (proposing, voting, _) =? validator.wave:
+  without (proposing, voting, _) =? validator.rounds.wave:
     return
   for proposal in proposing.proposals:
     var support: Stake
@@ -109,29 +111,29 @@ func updateCertified(validator: Validator, certificate: Block) =
       proposal.certifyBy(certificate.id, stake)
 
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
-  assert validator.last[validator.membership].proposals.len == 0
+  assert validator.rounds.last[validator.membership].proposals.len == 0
   var parents: seq[BlockId[Validator.Hashing]]
-  if previous =? validator.last.previous:
+  if previous =? validator.rounds.last.previous:
     for slot in previous.slots:
       if slot.proposals.len == 1:
         parents.add(slot.proposals[0].blck.id)
   let blck = Block.new(
     author = validator.membership,
-    round = validator.last.number,
+    round = validator.rounds.last.number,
     parents = parents,
     transactions = transactions
   )
-  validator.last.add(blck)
+  validator.rounds.last.add(blck)
   validator.updateCertified(blck)
   validator.identity.sign(blck)
 
 func receive*(validator: Validator, signed: SignedBlock) =
-  validator.last.add(signed.blck)
+  validator.rounds.last.add(signed.blck)
   validator.updateSkipped(signed.blck)
   validator.updateCertified(signed.blck)
 
 func round(validator: Validator, number: uint64): auto =
-  var round = validator.last
+  var round = validator.rounds.last
   while round.number > number and previous =? round.previous:
     round = previous
   if round.number == number:
@@ -187,7 +189,7 @@ func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
 
 iterator committed*(validator: Validator): auto =
   var done = false
-  var current = some validator.first
+  var current = some validator.rounds.first
   while not done and round =? current:
     for member in validator.committee.ordered(round.number):
       let slot = round[member]
@@ -202,5 +204,5 @@ iterator committed*(validator: Validator): auto =
       of SlotStatus.commit:
         yield slot.commit()
     if not done:
-      validator.remove(round)
+      validator.rounds.remove(round)
       current = round.next
