@@ -59,12 +59,7 @@ func wave(rounds: Rounds): auto =
   none (Round, Round, Round)
 
 func nextRound*(validator: Validator) =
-  type Round = typeof(validator.rounds.last)
-  let previous = validator.rounds.last
-  let next = Round.new(previous.number + 1, validator.committee.size)
-  next.previous = some previous
-  previous.next = some next
-  validator.rounds.last = next
+  validator.rounds.last = validator.rounds.last.createNext()
 
 func remove(rounds: var Rounds, round: Round) =
   if previous =? round.previous:
