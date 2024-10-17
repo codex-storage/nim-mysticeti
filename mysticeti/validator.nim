@@ -115,7 +115,7 @@ func round(validator: Validator, number: uint64): auto =
     return some round
 
 func status*(validator: Validator, blck: Block): ?SlotStatus =
-  if round =? round(validator, blck.round):
+  if round =? validator.rounds.first.find(blck.round):
     some round[blck.author].status
   else:
     none SlotStatus
@@ -124,7 +124,7 @@ func status*(validator: Validator, proposal: SignedBlock): ?SlotStatus =
   validator.status(proposal.blck)
 
 func findAnchor(validator: Validator, round: Round): auto =
-  var next = round.next.?next.?next
+  var next = round.find(round.number + 3)
   while current =? next:
     for member in validator.committee.ordered(current.number):
       let slot = current[member]
@@ -133,11 +133,8 @@ func findAnchor(validator: Validator, round: Round): auto =
     next = current.next
 
 func searchBackwards(round: Round, blockId: BlockId): auto =
-  var current = round
-  while current.number > blockId.round and previous =? current.previous:
-    current = previous
-  if current.number == blockId.round:
-    let slot = current[blockId.author]
+  if found =? round.find(blockId.round):
+    let slot = found[blockId.author]
     for proposal in slot.proposals:
       let blck = proposal.blck
       if blck.id == blockId:
