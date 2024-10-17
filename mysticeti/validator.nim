@@ -13,8 +13,6 @@ type
     committee: Committee[Signing]
     membership: CommitteeMember
     rounds: Rounds[Hashing]
-  Rounds[Hashing] = object
-    first, last: Round[Hashing]
 
 func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
   let round = Round[T.Hashing].new(0, committee.size)
@@ -60,16 +58,6 @@ func wave(rounds: Rounds): auto =
 
 func nextRound*(validator: Validator) =
   validator.rounds.last = validator.rounds.last.createNext()
-
-func remove(rounds: var Rounds, round: Round) =
-  if previous =? round.previous:
-    previous.next = round.next
-  else:
-    rounds.first = !round.next
-  if next =? round.next:
-    next.previous = round.previous
-  else:
-    rounds.last = !round.previous
 
 func skips(blck: Block, round: uint64, author: CommitteeMember): bool =
   for parent in blck.parents:
