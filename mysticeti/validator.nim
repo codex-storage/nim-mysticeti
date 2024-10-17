@@ -46,8 +46,9 @@ func skips(blck: Block, round: uint64, author: CommitteeMember): bool =
 
 func updateSkipped(validator: Validator, supporter: Block) =
   if previous =? validator.rounds.last.previous:
-    for (member, slot) in previous.slots.pairs:
-      if supporter.skips(previous.number, CommitteeMember(member)):
+    for member in validator.committee.ordered(previous.number):
+      let slot = previous[member]
+      if supporter.skips(previous.number, member):
         let stake = validator.committee.stake(supporter.author)
         slot.skipBy(stake)
 
@@ -68,7 +69,8 @@ proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   assert validator.rounds.last[validator.membership].proposals.len == 0
   var parents: seq[BlockId[Validator.Hashing]]
   if previous =? validator.rounds.last.previous:
-    for slot in previous.slots:
+    for member in validator.committee.ordered(previous.number):
+      let slot = previous[member]
       if slot.proposals.len == 1:
         parents.add(slot.proposals[0].blck.id)
   let blck = Block.new(

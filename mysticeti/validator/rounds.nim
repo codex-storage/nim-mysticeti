@@ -9,7 +9,7 @@ type
   Round*[Hashing] = ref object
     number: uint64
     previous, next: ?Round[Hashing]
-    slots*: seq[ProposerSlot[Hashing]]
+    slots: seq[ProposerSlot[Hashing]]
 
 func wave*(rounds: Rounds): auto =
   # A wave consists of 3 rounds: proposing -> voting -> certifying
