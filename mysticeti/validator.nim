@@ -26,18 +26,6 @@ func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
     rounds: rounds
   )
 
-func `[]`(round: Round, member: CommitteeMember): auto =
-  round.slots[int(member)]
-
-func add(round: Round, blck: Block): auto =
-  if slot =? round[blck.author]:
-    slot.add(blck)
-
-iterator proposals(round: Round): auto =
-  for slot in round.slots:
-    for proposal in slot.proposals:
-      yield proposal
-
 func identifier*(validator: Validator): auto =
   validator.identity.identifier
 
@@ -46,15 +34,6 @@ func membership*(validator: Validator): CommitteeMember =
 
 func round*(validator: Validator): uint64 =
   validator.rounds.last.number
-
-func wave(rounds: Rounds): auto =
-  # A wave consists of 3 rounds: proposing -> voting -> certifying
-  type Round = typeof(rounds.last)
-  let certifying = rounds.last
-  if voting =? certifying.previous:
-    if proposing =? voting.previous:
-      return some (proposing, voting, certifying)
-  none (Round, Round, Round)
 
 func nextRound*(validator: Validator) =
   validator.rounds.last = validator.rounds.last.createNext()
@@ -106,13 +85,6 @@ func receive*(validator: Validator, signed: SignedBlock) =
   validator.rounds.last.add(signed.blck)
   validator.updateSkipped(signed.blck)
   validator.updateCertified(signed.blck)
-
-func round(validator: Validator, number: uint64): auto =
-  var round = validator.rounds.last
-  while round.number > number and previous =? round.previous:
-    round = previous
-  if round.number == number:
-    return some round
 
 func status*(validator: Validator, blck: Block): ?SlotStatus =
   if round =? validator.rounds.first.find(blck.round):

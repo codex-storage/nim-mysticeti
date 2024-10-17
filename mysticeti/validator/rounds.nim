@@ -1,4 +1,6 @@
 import ../basics
+import ../committee
+import ../blocks
 import ./slots
 
 type
@@ -8,6 +10,15 @@ type
     number: uint64
     previous, next: ?Round[Hashing]
     slots*: seq[ProposerSlot[Hashing]]
+
+func wave*(rounds: Rounds): auto =
+  # A wave consists of 3 rounds: proposing -> voting -> certifying
+  type Round = typeof(rounds.last)
+  let certifying = rounds.last
+  if voting =? certifying.previous:
+    if proposing =? voting.previous:
+      return some (proposing, voting, certifying)
+  none (Round, Round, Round)
 
 func remove*(rounds: var Rounds, round: Round) =
   if previous =? round.previous:
@@ -33,6 +44,14 @@ func next*(round: Round): auto =
 func number*(round: Round): uint64 =
   round.number
 
+func `[]`*(round: Round, member: CommitteeMember): auto =
+  round.slots[int(member)]
+
+iterator proposals*(round: Round): auto =
+  for slot in round.slots:
+    for proposal in slot.proposals:
+      yield proposal
+
 func find*(round: Round, number: uint64): ?Round =
   var current = round
   while true:
@@ -53,3 +72,7 @@ func createNext*(round: Round): auto =
   next.previous = some round
   round.next = some next
   next
+
+func add*(round: Round, blck: Block): auto =
+  if slot =? round[blck.author]:
+    slot.add(blck)
