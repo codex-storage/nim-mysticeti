@@ -76,6 +76,14 @@ func find*(round: Round, number: uint64): ?Round =
         return none Round
       current = previous
 
+func findAnchor*(round: Round): auto =
+  var next = round.find(round.number + 3)
+  while current =? next:
+    for slot in current.slots:
+      if slot.status in [SlotStatus.undecided, SlotStatus.commit]:
+        return some slot
+    next = current.next
+
 func createNext*(round: Round): auto =
   assert round.next.isNone
   let next = Round.new(round.number + 1, round.slots.len)

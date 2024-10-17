@@ -96,14 +96,6 @@ func status*(validator: Validator, blck: Block): ?SlotStatus =
 func status*(validator: Validator, proposal: SignedBlock): ?SlotStatus =
   validator.status(proposal.blck)
 
-func findAnchor(validator: Validator, round: Round): auto =
-  var next = round.find(round.number + 3)
-  while current =? next:
-    for slot in current.slots:
-      if slot.status in [SlotStatus.undecided, SlotStatus.commit]:
-        return some slot
-    next = current.next
-
 func searchBackwards(round: Round, blockId: BlockId): auto =
   if found =? round.find(blockId.round):
     let slot = found[blockId.author]
@@ -113,7 +105,7 @@ func searchBackwards(round: Round, blockId: BlockId): auto =
         return some blck
 
 func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
-  without anchor =? validator.findAnchor(round):
+  without anchor =? round.findAnchor():
     return
   without anchorProposal =? anchor.proposal:
     return
