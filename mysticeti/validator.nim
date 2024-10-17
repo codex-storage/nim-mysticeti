@@ -7,12 +7,11 @@ import ./validator/rounds
 
 export slots
 
-type
-  Validator*[Signing, Hashing] = ref object
-    identity: Identity[Signing]
-    committee: Committee[Signing]
-    membership: CommitteeMember
-    rounds: Rounds[Hashing]
+type Validator*[Signing, Hashing] = ref object
+  identity: Identity[Signing]
+  committee: Committee[Signing]
+  membership: CommitteeMember
+  rounds: Rounds[Hashing]
 
 func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
   let round = Round[T.Hashing].new(0, committee.size)
