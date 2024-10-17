@@ -46,7 +46,7 @@ func skips(blck: Block, round: uint64, author: CommitteeMember): bool =
 
 func updateSkipped(validator: Validator, supporter: Block) =
   if previous =? validator.rounds.last.previous:
-    for member in validator.committee.ordered(previous.number):
+    for member in previous.members:
       let slot = previous[member]
       if supporter.skips(previous.number, member):
         let stake = validator.committee.stake(supporter.author)
@@ -69,8 +69,7 @@ proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   assert validator.rounds.last[validator.membership].proposals.len == 0
   var parents: seq[BlockId[Validator.Hashing]]
   if previous =? validator.rounds.last.previous:
-    for member in validator.committee.ordered(previous.number):
-      let slot = previous[member]
+    for slot in previous.slots:
       if slot.proposals.len == 1:
         parents.add(slot.proposals[0].blck.id)
   let blck = Block.new(
@@ -100,8 +99,7 @@ func status*(validator: Validator, proposal: SignedBlock): ?SlotStatus =
 func findAnchor(validator: Validator, round: Round): auto =
   var next = round.find(round.number + 3)
   while current =? next:
-    for member in validator.committee.ordered(current.number):
-      let slot = current[member]
+    for slot in current.slots:
       if slot.status in [SlotStatus.undecided, SlotStatus.commit]:
         return some slot
     next = current.next
@@ -137,8 +135,7 @@ iterator committed*(validator: Validator): auto =
   var done = false
   var current = some validator.rounds.first
   while not done and round =? current:
-    for member in validator.committee.ordered(round.number):
-      let slot = round[member]
+    for slot in round.slots:
       if slot.status == SlotStatus.undecided:
         validator.updateIndirect(slot, round)
       case slot.status

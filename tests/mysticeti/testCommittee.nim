@@ -26,16 +26,6 @@ suite "Committee":
       let member = !committee.membership(identifier)
       check committee.stake(member) == stake
 
-  test "members are ordered round-robin for each consensus round":
-    let identifiers = array[4, Identifier].example
-    let stakes = identifiers.mapIt( (it, 1/4) )
-    let committee = Committee.new(stakes)
-    check toSeq(committee.ordered(round = 0)) == @[0, 1, 2, 3].mapIt(CommitteeMember(it))
-    check toSeq(committee.ordered(round = 1)) == @[1, 2, 3, 0].mapIt(CommitteeMember(it))
-    check toSeq(committee.ordered(round = 2)) == @[2, 3, 0, 1].mapIt(CommitteeMember(it))
-    check toSeq(committee.ordered(round = 3)) == @[3, 0, 1, 2].mapIt(CommitteeMember(it))
-    check toSeq(committee.ordered(round = 4)) == @[0, 1, 2, 3].mapIt(CommitteeMember(it))
-
   test "no membership when identifier does not belong to a member":
     let identifiers = array[4, Identifier].example
     let stakes = identifiers.mapIt( (it, 1/4) )

@@ -19,6 +19,7 @@ export committee.Stake
 export committee.new
 export committee.CommitteeMember
 export committee.`==`
+export committee.`$`
 
 import ./mysticeti/blocks
 

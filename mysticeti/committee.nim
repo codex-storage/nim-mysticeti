@@ -4,6 +4,7 @@ import ./committee/members
 
 export members.CommitteeMember
 export members.`==`
+export members.`$`
 
 type
   Committee*[Signing] = ref object
@@ -36,9 +37,3 @@ func stake*(committee: Committee, identifier: Identifier): Stake =
     committee.stake(member)
   else:
     0
-
-iterator ordered*(committee: Committee, round: uint64): CommitteeMember =
-  let length = committee.members.len
-  let offset = (round mod length.uint64).int
-  for index in 0..<length:
-    yield CommitteeMember((offset + index) mod length)
