@@ -3,6 +3,7 @@ import ./signing
 import ./committee
 import ./blocks
 import ./validator/slots
+import ./validator/rounds
 
 export slots
 
@@ -14,18 +15,9 @@ type
     rounds: Rounds[Hashing]
   Rounds[Hashing] = object
     first, last: Round[Hashing]
-  Round[Hashing] = ref object
-    number: uint64
-    previous, next: ?Round[Hashing]
-    slots: seq[ProposerSlot[Hashing]]
-
-func new*(T: type Round, number: uint64, committee: Committee): T =
-  type Slot = ProposerSlot[T.Hashing]
-  let slots = newSeqWith(committee.size, Slot.new())
-  T(number: number, slots: slots)
 
 func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
-  let round = Round[T.Hashing].new(0, committee)
+  let round = Round[T.Hashing].new(0, committee.size)
   let rounds = Rounds[T.Hashing](first: round, last: round)
   without membership =? committee.membership(identity.identifier):
     return T.failure "identity is not a member of the committee"
@@ -69,7 +61,7 @@ func wave(rounds: Rounds): auto =
 func nextRound*(validator: Validator) =
   type Round = typeof(validator.rounds.last)
   let previous = validator.rounds.last
-  let next = Round.new(previous.number + 1, validator.committee)
+  let next = Round.new(previous.number + 1, validator.committee.size)
   next.previous = some previous
   previous.next = some next
   validator.rounds.last = next
