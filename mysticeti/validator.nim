@@ -96,14 +96,6 @@ func status*(validator: Validator, blck: Block): ?SlotStatus =
 func status*(validator: Validator, proposal: SignedBlock): ?SlotStatus =
   validator.status(proposal.blck)
 
-func searchBackwards(round: Round, blockId: BlockId): auto =
-  if found =? round.find(blockId.round):
-    let slot = found[blockId.author]
-    for proposal in slot.proposals:
-      let blck = proposal.blck
-      if blck.id == blockId:
-        return some blck
-
 func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
   without anchor =? round.findAnchor():
     return
@@ -118,7 +110,7 @@ func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
       if parent in slotProposal.certificates:
         slotProposal.certify(anchorProposal)
         return
-      without parentBlock =? round.searchBackwards(parent):
+      without parentBlock =? round.find(parent):
         discard
       todo.add(parentBlock.parents)
   slot.skip()

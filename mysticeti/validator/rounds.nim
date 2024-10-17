@@ -76,6 +76,14 @@ func find*(round: Round, number: uint64): ?Round =
         return none Round
       current = previous
 
+func find*(round: Round, blockId: BlockId): auto =
+  if found =? round.find(blockId.round):
+    let slot = found[blockId.author]
+    for proposal in slot.proposals:
+      let blck = proposal.blck
+      if blck.id == blockId:
+        return some blck
+
 func findAnchor*(round: Round): auto =
   var next = round.find(round.number + 3)
   while current =? next:
