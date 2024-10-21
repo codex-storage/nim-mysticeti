@@ -3,32 +3,10 @@ import ../committee
 import ../blocks
 import ./slots
 
-type
-  Rounds*[Hashing] = object
-    first*, last*: Round[Hashing]
-  Round*[Hashing] = ref object
-    number: uint64
-    previous, next: ?Round[Hashing]
-    slots: seq[ProposerSlot[Hashing]]
-
-func wave*(rounds: Rounds): auto =
-  # A wave consists of 3 rounds: proposing -> voting -> certifying
-  type Round = typeof(rounds.last)
-  let certifying = rounds.last
-  if voting =? certifying.previous:
-    if proposing =? voting.previous:
-      return some (proposing, voting, certifying)
-  none (Round, Round, Round)
-
-func remove*(rounds: var Rounds, round: Round) =
-  if previous =? round.previous:
-    previous.next = round.next
-  else:
-    rounds.first = !round.next
-  if next =? round.next:
-    next.previous = round.previous
-  else:
-    rounds.last = !round.previous
+type Round*[Hashing] = ref object
+  number: uint64
+  previous, next: ?Round[Hashing]
+  slots: seq[ProposerSlot[Hashing]]
 
 func new*(T: type Round, number: uint64, slots: int): T =
   type Slot = ProposerSlot[T.Hashing]
@@ -92,13 +70,45 @@ func findAnchor*(round: Round): auto =
         return some slot
     next = current.next
 
-func createNext*(round: Round): auto =
-  assert round.next.isNone
-  let next = Round.new(round.number + 1, round.slots.len)
-  next.previous = some round
-  round.next = some next
-  next
-
 func add*(round: Round, blck: Block): auto =
   if slot =? round[blck.author]:
     slot.add(blck)
+
+type Rounds*[Hashing] = object
+  first, last: Round[Hashing]
+
+func new*(T: type Rounds, slots: int, start: uint64 = 0): T =
+  let round = Round[T.Hashing].new(start, slots)
+  T(first: round, last: round)
+
+func first*(rounds: Rounds): auto =
+  rounds.first
+
+func last*(rounds: Rounds): auto =
+  rounds.last
+
+func wave*(rounds: Rounds): auto =
+  # A wave consists of 3 rounds: proposing -> voting -> certifying
+  type Round = typeof(rounds.last)
+  let certifying = rounds.last
+  if voting =? certifying.previous:
+    if proposing =? voting.previous:
+      return some (proposing, voting, certifying)
+  none (Round, Round, Round)
+
+func addNextRound*(rounds: var Rounds) =
+  let previous = rounds.last
+  let next = Round[Rounds.Hashing].new(previous.number + 1, previous.slots.len)
+  next.previous = some previous
+  previous.next = some next
+  rounds.last = next
+
+func remove*(rounds: var Rounds, round: Round) =
+  if previous =? round.previous:
+    previous.next = round.next
+  else:
+    rounds.first = !round.next
+  if next =? round.next:
+    next.previous = round.previous
+  else:
+    rounds.last = !round.previous

@@ -14,15 +14,13 @@ type Validator*[Signing, Hashing] = ref object
   rounds: Rounds[Hashing]
 
 func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
-  let round = Round[T.Hashing].new(0, committee.size)
-  let rounds = Rounds[T.Hashing](first: round, last: round)
   without membership =? committee.membership(identity.identifier):
     return T.failure "identity is not a member of the committee"
   success T(
     identity: identity,
     committee: committee,
     membership: membership,
-    rounds: rounds
+    rounds: Rounds[T.Hashing].new(committee.size)
   )
 
 func identifier*(validator: Validator): auto =
@@ -35,7 +33,7 @@ func round*(validator: Validator): uint64 =
   validator.rounds.last.number
 
 func nextRound*(validator: Validator) =
-  validator.rounds.last = validator.rounds.last.createNext()
+  validator.rounds.addNextRound()
 
 func skips(blck: Block, round: uint64, author: CommitteeMember): bool =
   for parent in blck.parents:
