@@ -26,17 +26,17 @@ suite "Proposer Slots":
   test "blocks can be added to slots, and they become proposals":
     let blocks = seq[Block].example
     for blck in blocks:
-      slot.add(blck)
+      slot.addProposal(blck)
     for blck in blocks:
       check slot.proposals.anyIt(it.blck == blck)
 
   test "proposals have no certificates initially":
-    slot.add(Block.example)
+    slot.addProposal(Block.example)
     let proposal = slot.proposals[0]
     check proposal.certificates.len == 0
 
   test "proposals can be certified by other blocks":
-    slot.add(Block.example)
+    slot.addProposal(Block.example)
     let proposal = slot.proposals[0]
     let certificate1, certificate2 = BlockId.example
     proposal.certifyBy(certificate1, Stake(1/9))
@@ -44,7 +44,7 @@ suite "Proposer Slots":
     check proposal.certificates == @[certificate1, certificate2]
 
   test "slots can be committed when a proposal is certified by >2/3 stake":
-    slot.add(Block.example)
+    slot.addProposal(Block.example)
     let proposal = slot.proposals[0]
     proposal.certifyBy(BlockId.example, 1/3)
     check slot.status == SlotStatus.undecided
@@ -54,8 +54,8 @@ suite "Proposer Slots":
     check slot.status == SlotStatus.commit
 
   test "slots choose a proposal when it is certified by >2/3 stake":
-    slot.add(Block.example)
-    slot.add(Block.example)
+    slot.addProposal(Block.example)
+    slot.addProposal(Block.example)
     let proposal = slot.proposals[1]
     proposal.certifyBy(BlockId.example, 1/3)
     check slot.proposal == none Proposal
@@ -66,9 +66,9 @@ suite "Proposer Slots":
 
   test "proposals can be certified by an anchor":
     let anchor = ProposerSlot.new()
-    anchor.add(Block.example)
+    anchor.addProposal(Block.example)
     anchor.proposals[0].certifyBy(BlockId.example, 3/4)
-    slot.add(Block.example)
+    slot.addProposal(Block.example)
     let proposal = slot.proposals[0]
     proposal.certify(!anchor.proposal)
     check slot.status == SlotStatus.commit
@@ -76,8 +76,8 @@ suite "Proposer Slots":
 
   test "committing a slot marks it as committed and returns the chosen block":
     let block1, block2 = Block.example
-    slot.add(block1)
-    slot.add(block2)
+    slot.addProposal(block1)
+    slot.addProposal(block2)
     let proposal = slot.proposals[1]
     proposal.certifyBy(BlockId.example, 3/4)
     check slot.commit() == block2

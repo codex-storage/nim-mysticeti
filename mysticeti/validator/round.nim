@@ -84,5 +84,5 @@ func remove*(round: Round) =
   round.next = none Round
   round.previous = none Round
 
-func add*(round: Round, blck: Block): auto =
-  round[blck.author].add(blck)
+func addProposal*(round: Round, blck: Block): auto =
+  round[blck.author].addProposal(blck)

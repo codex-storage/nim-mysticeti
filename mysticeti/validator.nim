@@ -75,12 +75,12 @@ proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
     parents = parents,
     transactions = transactions
   )
-  validator.rounds.latest.add(blck)
+  validator.rounds.latest.addProposal(blck)
   validator.updateCertified(blck)
   validator.identity.sign(blck)
 
 func receive*(validator: Validator, signed: SignedBlock) =
-  validator.rounds.latest.add(signed.blck)
+  validator.rounds.latest.addProposal(signed.blck)
   validator.updateSkipped(signed.blck)
   validator.updateCertified(signed.blck)
 

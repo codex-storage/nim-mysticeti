@@ -36,7 +36,7 @@ func blck*(proposal: Proposal): auto =
 func certificates*(proposal: Proposal): auto =
   proposal.certificates
 
-func add*(slot: ProposerSlot, blck: Block) =
+func addProposal*(slot: ProposerSlot, blck: Block) =
   let proposal = Proposal[Block.Hashing](slot: slot, blck: blck)
   slot.proposals.add(proposal)
 
