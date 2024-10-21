@@ -71,7 +71,7 @@ proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
         parents.add(slot.proposals[0].blck.id)
   let blck = Block.new(
     author = validator.membership,
-    round = validator.rounds.latest.number,
+    round = validator.round,
     parents = parents,
     transactions = transactions
   )

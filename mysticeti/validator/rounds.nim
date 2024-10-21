@@ -13,14 +13,14 @@ func new*(T: type Round, number: uint64, slots: int): T =
   let slots = newSeqWith(slots, Slot.new())
   T(number: number, slots: slots)
 
+func number*(round: Round): uint64 =
+  round.number
+
 func previous*(round: Round): auto =
   round.previous
 
 func next*(round: Round): auto =
   round.next
-
-func number*(round: Round): uint64 =
-  round.number
 
 func `[]`*(round: Round, member: CommitteeMember): auto =
   round.slots[int(member)]
@@ -71,8 +71,7 @@ func findAnchor*(round: Round): auto =
     next = current.next
 
 func add*(round: Round, blck: Block): auto =
-  if slot =? round[blck.author]:
-    slot.add(blck)
+  round[blck.author].add(blck)
 
 type Rounds*[Hashing] = object
   oldest, latest: Round[Hashing]
