@@ -35,4 +35,6 @@ suite "Single Validator":
 
   test "by default our own proposals are undecided":
     let proposal = validator.propose(seq[Transaction].example)
-    check validator.status(proposal) == some SlotStatus.undecided
+    let round = proposal.blck.round
+    let author = proposal.blck.author
+    check validator.status(round, author) == some SlotStatus.undecided

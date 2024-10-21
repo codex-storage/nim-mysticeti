@@ -84,14 +84,9 @@ func receive*(validator: Validator, signed: SignedBlock) =
   validator.updateSkipped(signed.blck)
   validator.updateCertified(signed.blck)
 
-func status*(validator: Validator, blck: Block): ?SlotStatus =
-  if round =? validator.rounds.oldest.find(blck.round):
-    some round[blck.author].status
-  else:
-    none SlotStatus
-
-func status*(validator: Validator, proposal: SignedBlock): ?SlotStatus =
-  validator.status(proposal.blck)
+func status*(validator: Validator, round: uint64, author: CommitteeMember): auto =
+  if round =? validator.rounds.oldest.find(round):
+    return some round[author].status
 
 func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
   without anchor =? round.findAnchor():

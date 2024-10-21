@@ -35,23 +35,29 @@ suite "Multiple Validators":
 
   test "by default received proposals are undecided":
     let proposal = validators[1].propose(seq[Transaction].example)
+    let round = proposal.blck.round
+    let author = proposal.blck.author
     validators[0].receive(proposal)
-    check validators[0].status(proposal) == some SlotStatus.undecided
+    check validators[0].status(round, author) == some SlotStatus.undecided
 
   test "skips blocks that are ignored by >2f validators":
     # first round: other validators do not receive this proposal
     let proposal = validators[0].propose(seq[Transaction].example)
+    let round = proposal.blck.round
+    let author = proposal.blck.author
     # second round: voting
     nextRound()
     validators[0].receive(validators[1].propose(seq[Transaction].example))
     validators[0].receive(validators[2].propose(seq[Transaction].example))
-    check validators[0].status(proposal) == some SlotStatus.undecided
+    check validators[0].status(round, author) == some SlotStatus.undecided
     validators[0].receive(validators[3].propose(seq[Transaction].example))
-    check validators[0].status(proposal) == some SlotStatus.skip
+    check validators[0].status(round, author) == some SlotStatus.skip
 
   test "commits blocks that have >2f certificates":
     # first round: proposing
-    let proposals = exchangeProposals()
+    let proposal = exchangeProposals()[0]
+    let round = proposal.blck.round
+    let author = proposal.blck.author
     # second round: voting
     nextRound()
     discard exchangeProposals()
@@ -59,9 +65,9 @@ suite "Multiple Validators":
     nextRound()
     discard validators[0].propose(seq[Transaction].example)
     validators[0].receive(validators[1].propose(seq[Transaction].example))
-    check validators[0].status(proposals[0]) == some SlotStatus.undecided
+    check validators[0].status(round, author) == some SlotStatus.undecided
     validators[0].receive(validators[2].propose(seq[Transaction].example))
-    check validators[0].status(proposals[0]) == some SlotStatus.commit
+    check validators[0].status(round, author) == some SlotStatus.commit
 
   test "can iterate over the list of committed blocks":
     # blocks proposed in first round, in order of committee members
