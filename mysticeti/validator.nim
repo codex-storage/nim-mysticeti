@@ -30,10 +30,10 @@ func membership*(validator: Validator): CommitteeMember =
   validator.membership
 
 func round*(validator: Validator): uint64 =
-  validator.rounds.last.number
+  validator.rounds.latest.number
 
 func nextRound*(validator: Validator) =
-  validator.rounds.addNextRound()
+  validator.rounds.addNewRound()
 
 func skips(blck: Block, round: uint64, author: CommitteeMember): bool =
   for parent in blck.parents:
@@ -42,7 +42,7 @@ func skips(blck: Block, round: uint64, author: CommitteeMember): bool =
   true
 
 func updateSkipped(validator: Validator, supporter: Block) =
-  if previous =? validator.rounds.last.previous:
+  if previous =? validator.rounds.latest.previous:
     for member in previous.members:
       let slot = previous[member]
       if supporter.skips(previous.number, member):
@@ -63,29 +63,29 @@ func updateCertified(validator: Validator, certificate: Block) =
       proposal.certifyBy(certificate.id, stake)
 
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
-  assert validator.rounds.last[validator.membership].proposals.len == 0
+  assert validator.rounds.latest[validator.membership].proposals.len == 0
   var parents: seq[BlockId[Validator.Hashing]]
-  if previous =? validator.rounds.last.previous:
+  if previous =? validator.rounds.latest.previous:
     for slot in previous.slots:
       if slot.proposals.len == 1:
         parents.add(slot.proposals[0].blck.id)
   let blck = Block.new(
     author = validator.membership,
-    round = validator.rounds.last.number,
+    round = validator.rounds.latest.number,
     parents = parents,
     transactions = transactions
   )
-  validator.rounds.last.add(blck)
+  validator.rounds.latest.add(blck)
   validator.updateCertified(blck)
   validator.identity.sign(blck)
 
 func receive*(validator: Validator, signed: SignedBlock) =
-  validator.rounds.last.add(signed.blck)
+  validator.rounds.latest.add(signed.blck)
   validator.updateSkipped(signed.blck)
   validator.updateCertified(signed.blck)
 
 func status*(validator: Validator, blck: Block): ?SlotStatus =
-  if round =? validator.rounds.first.find(blck.round):
+  if round =? validator.rounds.oldest.find(blck.round):
     some round[blck.author].status
   else:
     none SlotStatus
@@ -114,8 +114,8 @@ func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
 
 iterator committed*(validator: Validator): auto =
   var done = false
-  var current = some validator.rounds.first
-  while not done and round =? current:
+  while not done:
+    let round = validator.rounds.oldest
     for slot in round.slots:
       if slot.status == SlotStatus.undecided:
         validator.updateIndirect(slot, round)
@@ -128,5 +128,4 @@ iterator committed*(validator: Validator): auto =
       of SlotStatus.commit:
         yield slot.commit()
     if not done:
-      validator.rounds.remove(round)
-      current = round.next
+      validator.rounds.removeOldestRound()

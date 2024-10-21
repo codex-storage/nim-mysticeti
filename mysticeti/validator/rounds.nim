@@ -75,40 +75,40 @@ func add*(round: Round, blck: Block): auto =
     slot.add(blck)
 
 type Rounds*[Hashing] = object
-  first, last: Round[Hashing]
+  oldest, latest: Round[Hashing]
 
 func new*(T: type Rounds, slots: int, start: uint64 = 0): T =
   let round = Round[T.Hashing].new(start, slots)
-  T(first: round, last: round)
+  T(oldest: round, latest: round)
 
-func first*(rounds: Rounds): auto =
-  rounds.first
+func oldest*(rounds: Rounds): auto =
+  rounds.oldest
 
-func last*(rounds: Rounds): auto =
-  rounds.last
+func latest*(rounds: Rounds): auto =
+  rounds.latest
 
 func wave*(rounds: Rounds): auto =
   # A wave consists of 3 rounds: proposing -> voting -> certifying
-  type Round = typeof(rounds.last)
-  let certifying = rounds.last
+  type Round = typeof(rounds.latest)
+  let certifying = rounds.latest
   if voting =? certifying.previous:
     if proposing =? voting.previous:
       return some (proposing, voting, certifying)
   none (Round, Round, Round)
 
-func addNextRound*(rounds: var Rounds) =
-  let previous = rounds.last
+func addNewRound*(rounds: var Rounds) =
+  let previous = rounds.latest
   let next = Round[Rounds.Hashing].new(previous.number + 1, previous.slots.len)
   next.previous = some previous
   previous.next = some next
-  rounds.last = next
+  rounds.latest = next
 
-func remove*(rounds: var Rounds, round: Round) =
-  if previous =? round.previous:
-    previous.next = round.next
-  else:
-    rounds.first = !round.next
-  if next =? round.next:
-    next.previous = round.previous
-  else:
-    rounds.last = !round.previous
+func removeOldestRound*(rounds: var Rounds) =
+  assert rounds.oldest.previous.isNone
+  assert rounds.oldest.next.isSome
+  type Round = typeof(rounds.oldest)
+  let oldest = rounds.oldest
+  let next = !oldest.next
+  next.previous = none Round
+  oldest.next = none Round
+  rounds.oldest = next
