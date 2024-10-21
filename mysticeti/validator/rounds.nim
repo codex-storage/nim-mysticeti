@@ -8,7 +8,7 @@ type Round*[Hashing] = ref object
   previous, next: ?Round[Hashing]
   slots: seq[ProposerSlot[Hashing]]
 
-func new*(T: type Round, number: uint64, slots: int): T =
+func new(T: type Round, number: uint64, slots: int): T =
   type Slot = ProposerSlot[T.Hashing]
   let slots = newSeqWith(slots, Slot.new())
   T(number: number, slots: slots)
@@ -76,7 +76,7 @@ func add*(round: Round, blck: Block): auto =
 type Rounds*[Hashing] = object
   oldest, latest: Round[Hashing]
 
-func new*(T: type Rounds, slots: int, start: uint64 = 0): T =
+func init*(T: type Rounds, slots: int, start: uint64 = 0): T =
   let round = Round[T.Hashing].new(start, slots)
   T(oldest: round, latest: round)
 

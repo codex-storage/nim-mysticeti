@@ -20,7 +20,7 @@ func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
     identity: identity,
     committee: committee,
     membership: membership,
-    rounds: Rounds[T.Hashing].new(committee.size)
+    rounds: Rounds[T.Hashing].init(committee.size)
   )
 
 func identifier*(validator: Validator): auto =
