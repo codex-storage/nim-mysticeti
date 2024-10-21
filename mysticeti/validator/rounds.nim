@@ -88,12 +88,10 @@ func latest*(rounds: Rounds): auto =
 
 func wave*(rounds: Rounds): auto =
   # A wave consists of 3 rounds: proposing -> voting -> certifying
-  type Round = typeof(rounds.latest)
   let certifying = rounds.latest
   if voting =? certifying.previous:
     if proposing =? voting.previous:
       return some (proposing, voting, certifying)
-  none (Round, Round, Round)
 
 func addNewRound*(rounds: var Rounds) =
   let previous = rounds.latest
