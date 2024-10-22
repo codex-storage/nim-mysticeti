@@ -25,6 +25,7 @@ suite "Single Validator":
 
   test "validators sign their proposals":
     let proposal = validator.propose(seq[Transaction].example)
+    check proposal.blck.round == validator.round
     check proposal.blck.author == validator.membership
     check proposal.signer == validator.identifier
 

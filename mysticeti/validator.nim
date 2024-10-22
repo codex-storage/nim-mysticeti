@@ -79,10 +79,18 @@ proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   validator.updateCertified(blck)
   validator.identity.sign(blck)
 
-func receive*(validator: Validator, signed: SignedBlock) =
+func receive*(validator: Validator, signed: SignedBlock): ?!void =
+  without member =? validator.committee.membership(signed.signer):
+    return failure "block is not signed by a committee member"
+  if member != signed.blck.author:
+    return failure "block is not signed by its author"
+  for parent in signed.blck.parents:
+    if parent.round >= signed.blck.round:
+      return failure "block has a parent from an invalid round"
   validator.rounds.latest.addProposal(signed.blck)
   validator.updateSkipped(signed.blck)
   validator.updateCertified(signed.blck)
+  success()
 
 func status*(validator: Validator, round: uint64, author: CommitteeMember): auto =
   if round =? validator.rounds.oldest.find(round):
