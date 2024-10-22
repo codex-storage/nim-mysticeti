@@ -28,12 +28,14 @@ proc example*(T: type BlockId): T =
   let hash = Hash[T.Hashing].example
   BlockId.new(author, round, hash)
 
-proc example*(T: type Block): T =
-  let author = CommitteeMember.example
-  let round = uint64.example
+proc example*(
+  T: type Block,
+  author = CommitteeMember.example,
+  round = uint64.example
+): T =
   let parents = seq[BlockId[T.Hashing]].example
   let transactions = seq[Transaction].example
-  Block.new(author, round, parents, transactions)
+  T.new(author, round, parents, transactions)
 
 proc example*[T](_: type seq[T], length=0..10): seq[T] =
   let size = rand(length)

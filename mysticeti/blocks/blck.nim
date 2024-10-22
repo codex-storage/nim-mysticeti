@@ -10,14 +10,14 @@ type
     parents: seq[BlockId[Hashing]]
     transactions: seq[Transaction]
 
-func new*(
-  _: type Block,
+func new*[Hashing](
+  _: type Block[Hashing];
   author: CommitteeMember,
   round: uint64,
-  parents: seq[BlockId],
+  parents: seq[BlockId[Hashing]],
   transactions: seq[Transaction]
 ): auto =
-  Block[BlockId.Hashing](
+  Block[Hashing](
     author: author,
     round: round,
     parents: parents,

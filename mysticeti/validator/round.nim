@@ -9,6 +9,7 @@ type Round*[Hashing] = ref object
   slots: seq[ProposerSlot[Hashing]]
 
 func new*(T: type Round, number: uint64, slots: int): T =
+  assert slots > 0
   type Slot = ProposerSlot[T.Hashing]
   let slots = newSeqWith(slots, Slot.new())
   T(number: number, slots: slots)
@@ -42,7 +43,7 @@ iterator slots*(round: Round): auto =
     yield round[member]
 
 iterator proposals*(round: Round): auto =
-  for slot in round.slots:
+  for slot in slots(round):
     for proposal in slot.proposals:
       yield proposal
 
@@ -71,10 +72,14 @@ func find*(round: Round, blockId: BlockId): auto =
 func findAnchor*(round: Round): auto =
   var next = round.find(round.number + 3)
   while current =? next:
-    for slot in current.slots:
+    for slot in slots(current):
       if slot.status in [SlotStatus.undecided, SlotStatus.commit]:
         return some slot
     next = current.next
+
+func addProposal*(round: Round, blck: Block): auto =
+  assert blck.round == round.number
+  round[blck.author].addProposal(blck)
 
 func remove*(round: Round) =
   if previous =? round.previous:
@@ -83,6 +88,3 @@ func remove*(round: Round) =
     next.previous = round.previous
   round.next = none Round
   round.previous = none Round
-
-func addProposal*(round: Round, blck: Block): auto =
-  round[blck.author].addProposal(blck)
