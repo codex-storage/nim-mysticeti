@@ -87,6 +87,10 @@ func receive*(validator: Validator, signed: SignedBlock): ?!void =
   for parent in signed.blck.parents:
     if parent.round >= signed.blck.round:
       return failure "block has a parent from an invalid round"
+  for i in 0..<signed.blck.parents.len:
+    for j in 0..<i:
+      if signed.blck.parents[i] == signed.blck.parents[j]:
+        return failure "block includes a parent more than once"
   validator.rounds.latest.addProposal(signed.blck)
   validator.updateSkipped(signed.blck)
   validator.updateCertified(signed.blck)

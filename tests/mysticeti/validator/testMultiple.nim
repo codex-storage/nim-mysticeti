@@ -76,6 +76,21 @@ suite "Multiple Validators":
     check outcome.isFailure
     check outcome.error.msg == "block has a parent from an invalid round"
 
+  test "refuses proposals that include a parent more than once":
+    let parents = exchangeProposals().mapIt(it.blck.id)
+    let badParent = parents.sample
+    nextRound()
+    let blck = Block.new(
+      CommitteeMember(0),
+      round = 1,
+      parents & badparent,
+      seq[Transaction].example
+    )
+    let proposal = identities[0].sign(blck)
+    let outcome = validators[1].receive(proposal)
+    check outcome.isFailure
+    check outcome.error.msg == "block includes a parent more than once"
+
   test "skips blocks that are ignored by >2f validators":
     # first round: other validators do not receive this proposal
     let proposal = validators[0].propose(seq[Transaction].example)
