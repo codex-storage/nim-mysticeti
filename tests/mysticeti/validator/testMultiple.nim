@@ -8,6 +8,7 @@ suite "Multiple Validators":
   type Validator = mysticeti.Validator[MockSigning, MockHashing]
   type Identity = mysticeti.Identity[MockSigning]
   type BlockId = blocks.BlockId[MockHashing]
+  type SignedBlock = blocks.SignedBlock[MockSigning, MockHashing]
   type Hash = hashing.Hash[MockHashing]
 
   var validators: seq[Validator]
@@ -22,13 +23,23 @@ suite "Multiple Validators":
     for validator in validators:
       validator.nextRound()
 
-  proc exchangeProposals: auto =
-    let proposals = validators.mapIt(it.propose(seq[Transaction].example))
-    for validator in validators:
-      for proposal in proposals:
-        if proposal.blck.author != validator.membership:
-          !validator.receive(proposal)
-    proposals
+  proc exchangeProposals(exchanges: openArray[(int, seq[int])]): seq[SignedBlock] =
+    for (proposer, receivers) in exchanges:
+      let proposer = validators[proposer]
+      let proposal = proposer.propose(seq[Transaction].example)
+      for receiver in receivers:
+        let receiver = validators[receiver]
+        if receiver != proposer:
+          !receiver.receive(proposal)
+      result.add(proposal)
+
+  proc exchangeProposals: seq[SignedBlock] =
+    for proposer in validators:
+      let proposal = proposer.propose(seq[Transaction].example)
+      for receiver in validators:
+        if receiver != proposer:
+          !receiver.receive(proposal)
+      result.add(proposal)
 
   test "validators include blocks from previous round as parents":
     let previous = exchangeProposals()
@@ -91,11 +102,30 @@ suite "Multiple Validators":
     check outcome.isFailure
     check outcome.error.msg == "block includes a parent more than once"
 
+  test "refuses proposals without >2/3 parents from the previous round":
+    let parents = exchangeProposals().mapIt(it.blck.id)
+    let blck = Block.new(
+      CommitteeMember(0),
+      round = 1,
+      parents[0..<2],
+      seq[Transaction].example
+    )
+    let proposal = identities[0].sign(blck)
+    let outcome = validators[1].receive(proposal)
+    check outcome.isFailure
+    check outcome.error.msg ==
+      "block does not include parents representing >2/3 stake from previous round"
+
   test "skips blocks that are ignored by >2f validators":
-    # first round: other validators do not receive this proposal
-    let proposal = validators[0].propose(seq[Transaction].example)
-    let round = proposal.blck.round
-    let author = proposal.blck.author
+    # first round: other validators do not receive proposal from first validator
+    let proposals = exchangeProposals {
+      0: @[],
+      1: @[0, 1, 2, 3],
+      2: @[0, 1, 2, 3],
+      3: @[0, 1, 2, 3]
+    }
+    let round = proposals[0].blck.round
+    let author = proposals[0].blck.author
     # second round: voting
     nextRound()
     !validators[0].receive(validators[1].propose(seq[Transaction].example))
@@ -136,35 +166,35 @@ suite "Multiple Validators":
     check toSeq(validators[0].committed()) == second
 
   test "commits blocks using the indirect decision rule":
-    # first round: proposal is seen by majority
-    let proposal = validators[0].propose(seq[Transaction].example)
-    for index in 1..3:
-      discard validators[index].propose(seq[Transaction].example)
-    !validators[1].receive(proposal)
-    !validators[2].receive(proposal)
-    # second round: majority votes are only seen by first validator
+    # first round: proposals
+    let proposals = exchangeProposals {
+      0: @[0, 1, 2, 3],
+      1: @[0, 1],
+      2: @[0, 2, 3],
+      3: @[1, 2, 3]
+    }
+    # second round: voting
     nextRound()
-    discard validators[0].propose(seq[Transaction].example)
-    let vote2 = validators[1].propose(seq[Transaction].example)
-    let vote3 = validators[2].propose(seq[Transaction].example)
-    discard validators[3].propose(seq[Transaction].example)
-    !validators[0].receive(vote2)
-    !validators[0].receive(vote3)
-    # third round: only first validator creates a certificate
+    discard exchangeProposals {
+      0: @[0, 1, 3],
+      1: @[0, 1, 3],
+      2: @[0, 3],
+      3: @[1, 3]
+    }
+    # third round: certifying
     nextRound()
-    let certificate = validators[0].propose(seq[Transaction].example)
-    for index in 1..3:
-      discard validators[index].propose(seq[Transaction].example)
-    !validators[1].receive(certificate)
-    !validators[2].receive(certificate)
-    !validators[3].receive(certificate)
-    # fourth round: anchors
-    nextRound()
-    discard exchangeProposals()
-    # fifth round: voting on anchors
+    discard exchangeProposals {
+      0: @[0, 1, 2, 3],
+      1: @[0, 1, 2, 3],
+      3: @[0, 1, 2, 3]
+    }
+    # fourth round: anchor
     nextRound()
     discard exchangeProposals()
-    # sixth round: certifying anchors
+    # fifth round: voting on anchor
     nextRound()
     discard exchangeProposals()
-    check toSeq(validators[0].committed()).?[0] == some proposal.blck
+    # sixth round: certifying anchor
+    nextRound()
+    discard exchangeProposals()
+    check toSeq(validators[0].committed()).contains(proposals[0].blck)

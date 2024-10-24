@@ -91,6 +91,13 @@ func receive*(validator: Validator, signed: SignedBlock): ?!void =
     for j in 0..<i:
       if signed.blck.parents[i] == signed.blck.parents[j]:
         return failure "block includes a parent more than once"
+  if signed.blck.round > 0:
+    var stake: Stake
+    for parent in signed.blck.parents:
+      if parent.round == validator.round - 1:
+        stake += validator.committee.stake(parent.author)
+    if stake <= 2/3:
+      return failure "block does not include parents representing >2/3 stake from previous round"
   validator.rounds.latest.addProposal(signed.blck)
   validator.updateSkipped(signed.blck)
   validator.updateCertified(signed.blck)
