@@ -4,8 +4,10 @@ import ./committee
 import ./blocks
 import ./validator/slots
 import ./validator/rounds
+import ./validator/checks
 
 export slots
+export checks
 
 type Validator*[Signing, Hashing] = ref object
   identity: Identity[Signing]
@@ -79,29 +81,34 @@ proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   validator.updateCertified(blck)
   validator.identity.sign(blck)
 
-func receive*(validator: Validator, signed: SignedBlock): ?!void =
+func check*(validator: Validator, signed: SignedBlock): auto =
+  type BlockCheck = checks.BlockCheck[SignedBlock.Hashing]
   without member =? validator.committee.membership(signed.signer):
-    return failure "block is not signed by a committee member"
+    return BlockCheck.invalid("block is not signed by a committee member")
   if member != signed.blck.author:
-    return failure "block is not signed by its author"
+    return BlockCheck.invalid("block is not signed by its author")
   for parent in signed.blck.parents:
     if parent.round >= signed.blck.round:
-      return failure "block has a parent from an invalid round"
+      return BlockCheck.invalid("block has a parent from an invalid round")
   for i in 0..<signed.blck.parents.len:
     for j in 0..<i:
       if signed.blck.parents[i] == signed.blck.parents[j]:
-        return failure "block includes a parent more than once"
+        return BlockCheck.invalid("block includes a parent more than once")
   if signed.blck.round > 0:
     var stake: Stake
     for parent in signed.blck.parents:
       if parent.round == validator.round - 1:
         stake += validator.committee.stake(parent.author)
     if stake <= 2/3:
-      return failure "block does not include parents representing >2/3 stake from previous round"
-  validator.rounds.latest.addProposal(signed.blck)
-  validator.updateSkipped(signed.blck)
-  validator.updateCertified(signed.blck)
-  success()
+      return BlockCheck.invalid(
+        "block does not include parents representing >2/3 stake from previous round"
+      )
+  BlockCheck.correct(signed.blck)
+
+func receive*(validator: Validator, correct: CorrectBlock) =
+  validator.rounds.latest.addProposal(correct.blck)
+  validator.updateSkipped(correct.blck)
+  validator.updateCertified(correct.blck)
 
 func status*(validator: Validator, round: uint64, author: CommitteeMember): auto =
   if round =? validator.rounds.oldest.find(round):

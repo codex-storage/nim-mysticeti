@@ -30,7 +30,8 @@ suite "Multiple Validators":
       for receiver in receivers:
         let receiver = validators[receiver]
         if receiver != proposer:
-          !receiver.receive(proposal)
+          let checked = receiver.check(proposal)
+          receiver.receive(checked.blck)
       result.add(proposal)
 
   proc exchangeProposals: seq[SignedBlock] =
@@ -38,7 +39,8 @@ suite "Multiple Validators":
       let proposal = proposer.propose(seq[Transaction].example)
       for receiver in validators:
         if receiver != proposer:
-          !receiver.receive(proposal)
+          let checked = receiver.check(proposal)
+          receiver.receive(checked.blck)
       result.add(proposal)
 
   test "validators include blocks from previous round as parents":
@@ -52,24 +54,25 @@ suite "Multiple Validators":
     let proposal = validators[1].propose(seq[Transaction].example)
     let round = proposal.blck.round
     let author = proposal.blck.author
-    !validators[0].receive(proposal)
+    let checked = validators[0].check(proposal)
+    validators[0].receive(checked.blck)
     check validators[0].status(round, author) == some SlotStatus.undecided
 
   test "refuses proposals that are not signed by the author":
     let proposal = validators[1].propose(seq[Transaction].example)
     let signedByOther = identities[2].sign(proposal.blck)
-    let outcome = validators[0].receive(signedByOther)
-    check outcome.isFailure
-    check outcome.error.msg == "block is not signed by its author"
+    let checked = validators[0].check(signedByOther)
+    check checked.verdict == BlockVerdict.invalid
+    check checked.reason == "block is not signed by its author"
 
   test "refuses proposals that are not signed by a committee member":
     let otherIdentity = Identity.example
     let otherCommittee = Committee.new({otherIdentity.identifier: 1/1})
     let otherValidator = !Validator.new(otherIdentity, otherCommittee)
     let proposal = otherValidator.propose(seq[Transaction].example)
-    let outcome = validators[0].receive(proposal)
-    check outcome.isFailure
-    check outcome.error.msg == "block is not signed by a committee member"
+    let checked = validators[0].check(proposal)
+    check checked.verdict == BlockVerdict.invalid
+    check checked.reason == "block is not signed by a committee member"
 
   test "refuses proposals that have a parent that is not from a previous round":
     let parents = exchangeProposals().mapIt(it.blck.id)
@@ -83,9 +86,9 @@ suite "Multiple Validators":
       seq[Transaction].example
     )
     let proposal = identities[0].sign(blck)
-    let outcome = validators[1].receive(proposal)
-    check outcome.isFailure
-    check outcome.error.msg == "block has a parent from an invalid round"
+    let checked = validators[1].check(proposal)
+    check checked.verdict == BlockVerdict.invalid
+    check checked.reason == "block has a parent from an invalid round"
 
   test "refuses proposals that include a parent more than once":
     let parents = exchangeProposals().mapIt(it.blck.id)
@@ -98,9 +101,9 @@ suite "Multiple Validators":
       seq[Transaction].example
     )
     let proposal = identities[0].sign(blck)
-    let outcome = validators[1].receive(proposal)
-    check outcome.isFailure
-    check outcome.error.msg == "block includes a parent more than once"
+    let checked = validators[1].check(proposal)
+    check checked.verdict == BlockVerdict.invalid
+    check checked.reason == "block includes a parent more than once"
 
   test "refuses proposals without >2/3 parents from the previous round":
     let parents = exchangeProposals().mapIt(it.blck.id)
@@ -111,9 +114,9 @@ suite "Multiple Validators":
       seq[Transaction].example
     )
     let proposal = identities[0].sign(blck)
-    let outcome = validators[1].receive(proposal)
-    check outcome.isFailure
-    check outcome.error.msg ==
+    let checked = validators[1].check(proposal)
+    check checked.verdict == BlockVerdict.invalid
+    check checked.reason ==
       "block does not include parents representing >2/3 stake from previous round"
 
   test "skips blocks that are ignored by >2f validators":
@@ -128,10 +131,11 @@ suite "Multiple Validators":
     let author = proposals[0].blck.author
     # second round: voting
     nextRound()
-    !validators[0].receive(validators[1].propose(seq[Transaction].example))
-    !validators[0].receive(validators[2].propose(seq[Transaction].example))
+    let votes = validators.mapIt(it.propose(seq[Transaction].example))
+    validators[0].receive(validators[0].check(votes[1]).blck)
+    validators[0].receive(validators[0].check(votes[2]).blck)
     check validators[0].status(round, author) == some SlotStatus.undecided
-    !validators[0].receive(validators[3].propose(seq[Transaction].example))
+    validators[0].receive(validators[0].check(votes[3]).blck)
     check validators[0].status(round, author) == some SlotStatus.skip
 
   test "commits blocks that have >2f certificates":
@@ -144,10 +148,10 @@ suite "Multiple Validators":
     discard exchangeProposals()
     # third round: certifying
     nextRound()
-    discard validators[0].propose(seq[Transaction].example)
-    !validators[0].receive(validators[1].propose(seq[Transaction].example))
+    let certificates = validators.mapIt(it.propose(seq[Transaction].example))
+    validators[0].receive(validators[0].check(certificates[1]).blck)
     check validators[0].status(round, author) == some SlotStatus.undecided
-    !validators[0].receive(validators[2].propose(seq[Transaction].example))
+    validators[0].receive(validators[0].check(certificates[2]).blck)
     check validators[0].status(round, author) == some SlotStatus.commit
 
   test "can iterate over the list of committed blocks":

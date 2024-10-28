@@ -8,9 +8,16 @@ export validator.membership
 export validator.round
 export validator.nextRound
 export validator.propose
+export validator.check
 export validator.receive
 export validator.status
 export validator.committed
+export validator.BlockCheck
+export validator.BlockVerdict
+export validator.verdict
+export validator.reason
+export validator.missing
+export validator.blck
 
 import ./mysticeti/committee
 
