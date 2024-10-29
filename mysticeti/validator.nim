@@ -114,6 +114,8 @@ func check*(validator: Validator, signed: SignedBlock): auto =
         missing.add(parent)
   if missing.len > 0:
     return BlockCheck.incomplete(missing)
+  if validator.rounds.latest.find(signed.blck.id).isSome:
+    return BlockCheck.invalid("block already received")
   BlockCheck.correct(signed)
 
 func receive*(validator: Validator, correct: CorrectBlock) =

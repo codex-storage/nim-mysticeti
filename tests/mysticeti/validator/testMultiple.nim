@@ -176,6 +176,12 @@ suite "Multiple Validators":
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block has a round number that is too high"
 
+  test "refuses a proposal that was already received":
+    let proposals = exchangeProposals()
+    let checked = validators[1].check(proposals[0])
+    check checked.verdict == BlockVerdict.invalid
+    check checked.reason == "block already received"
+
   test "skips blocks that are ignored by >2f validators":
     # first round: other validators do not receive proposal from first validator
     let proposals = exchangeProposals {
