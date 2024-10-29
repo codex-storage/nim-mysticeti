@@ -3,14 +3,14 @@ import ../blocks
 import ../committee
 import ./slots
 
-type Round*[Hashing] = ref object
+type Round*[Signing, Hashing] = ref object
   number: uint64
-  previous, next: ?Round[Hashing]
-  slots: seq[ProposerSlot[Hashing]]
+  previous, next: ?Round[Signing, Hashing]
+  slots: seq[ProposerSlot[Signing, Hashing]]
 
 func new*(T: type Round, number: uint64, slots: int): T =
   assert slots > 0
-  type Slot = ProposerSlot[T.Hashing]
+  type Slot = ProposerSlot[T.Signing, T.Hashing]
   let slots = newSeqWith(slots, Slot.new())
   T(number: number, slots: slots)
 
@@ -65,9 +65,9 @@ func find*(round: Round, blockId: BlockId): auto =
   if found =? round.find(blockId.round):
     let slot = found[blockId.author]
     for proposal in slot.proposals:
-      let blck = proposal.blck
-      if blck.id == blockId:
-        return some blck
+      let signedBlock = proposal.signedBlock
+      if signedBlock.blck.id == blockId:
+        return some signedBlock
 
 func findAnchor*(round: Round): auto =
   var next = round.find(round.number + 3)
@@ -77,9 +77,10 @@ func findAnchor*(round: Round): auto =
         return some slot
     next = current.next
 
-func addProposal*(round: Round, blck: Block): auto =
+func addProposal*(round: Round, signedBlock: SignedBlock): auto =
+  let blck = signedBlock.blck
   assert blck.round == round.number
-  round[blck.author].addProposal(blck)
+  round[blck.author].addProposal(signedBlock)
 
 func remove*(round: Round) =
   if previous =? round.previous:

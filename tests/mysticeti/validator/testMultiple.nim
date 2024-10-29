@@ -23,25 +23,32 @@ suite "Multiple Validators":
     for validator in validators:
       validator.nextRound()
 
+  proc exchangeProposal(proposer, receiver: Validator, proposal: SignedBlock) =
+    if receiver != proposer:
+      var checked = receiver.check(proposal)
+      if checked.verdict == BlockVerdict.incomplete:
+        # exchange missing parent blocks
+        for missing in checked.missing:
+          let missingProposal = !proposer.getBlock(missing)
+          exchangeProposal(proposer, receiver, missingProposal)
+        checked = receiver.check(proposal)
+      receiver.receive(checked.blck)
+
   proc exchangeProposals(exchanges: openArray[(int, seq[int])]): seq[SignedBlock] =
     for (proposer, receivers) in exchanges:
       let proposer = validators[proposer]
       let proposal = proposer.propose(seq[Transaction].example)
       for receiver in receivers:
         let receiver = validators[receiver]
-        if receiver != proposer:
-          let checked = receiver.check(proposal)
-          receiver.receive(checked.blck)
+        exchangeProposal(proposer, receiver, proposal)
       result.add(proposal)
 
   proc exchangeProposals: seq[SignedBlock] =
-    for proposer in validators:
-      let proposal = proposer.propose(seq[Transaction].example)
-      for receiver in validators:
-        if receiver != proposer:
-          let checked = receiver.check(proposal)
-          receiver.receive(checked.blck)
-      result.add(proposal)
+    var exchanges: seq[(int, seq[int])]
+    for proposer in validators.low..validators.high:
+      let receivers = toSeq[validators.low..validators.high]
+      exchanges.add( (proposer, receivers) )
+    exchangeProposals(exchanges)
 
   test "validators include blocks from previous round as parents":
     let previous = exchangeProposals()
@@ -118,6 +125,22 @@ suite "Multiple Validators":
     check checked.verdict == BlockVerdict.invalid
     check checked.reason ==
       "block does not include parents representing >2/3 stake from previous round"
+
+  test "refuses proposals with an unknown parent block":
+    # first round: nobody recieves proposal from validator 0
+    let parents = exchangeProposals {
+      0: @[],
+      1: @[0, 1, 2, 3],
+      2: @[0, 1, 2, 3],
+      3: @[0, 1, 2, 3],
+    }
+    # second round: validator 0 creates block with parent that others didn't see
+    nextRound()
+    let proposal = validators[0].propose(seq[Transaction].example)
+    # other validator will not accept block before it receives the parent
+    let checked = validators[1].check(proposal)
+    check checked.verdict == BlockVerdict.incomplete
+    check checked.missing == @[parents[0].blck.id]
 
   test "skips blocks that are ignored by >2f validators":
     # first round: other validators do not receive proposal from first validator
@@ -201,4 +224,4 @@ suite "Multiple Validators":
     # sixth round: certifying anchor
     nextRound()
     discard exchangeProposals()
-    check toSeq(validators[0].committed()).contains(proposals[0].blck)
+    check toSeq(validators[0].committed()).contains(proposals[3].blck)

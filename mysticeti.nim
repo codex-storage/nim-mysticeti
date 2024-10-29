@@ -10,6 +10,7 @@ export validator.nextRound
 export validator.propose
 export validator.check
 export validator.receive
+export validator.getBlock
 export validator.status
 export validator.committed
 export validator.BlockCheck

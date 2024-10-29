@@ -13,7 +13,7 @@ type Validator*[Signing, Hashing] = ref object
   identity: Identity[Signing]
   committee: Committee[Signing]
   membership: CommitteeMember
-  rounds: Rounds[Hashing]
+  rounds: Rounds[Signing, Hashing]
 
 func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
   without membership =? committee.membership(identity.identifier):
@@ -22,7 +22,7 @@ func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
     identity: identity,
     committee: committee,
     membership: membership,
-    rounds: Rounds[T.Hashing].init(committee.size)
+    rounds: Rounds[T.Signing, T.Hashing].init(committee.size)
   )
 
 func identifier*(validator: Validator): auto =
@@ -77,12 +77,14 @@ proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
     parents = parents,
     transactions = transactions
   )
-  validator.rounds.latest.addProposal(blck)
+  let signedBlock = validator.identity.sign(blck)
+  validator.rounds.latest.addProposal(signedBlock)
   validator.updateCertified(blck)
-  validator.identity.sign(blck)
+  signedBlock
 
 func check*(validator: Validator, signed: SignedBlock): auto =
-  type BlockCheck = checks.BlockCheck[SignedBlock.Hashing]
+  type BlockCheck = checks.BlockCheck[SignedBlock.Signing, SignedBlock.Hashing]
+  type BlockId = blocks.BlockId[SignedBlock.Hashing]
   without member =? validator.committee.membership(signed.signer):
     return BlockCheck.invalid("block is not signed by a committee member")
   if member != signed.blck.author:
@@ -97,18 +99,28 @@ func check*(validator: Validator, signed: SignedBlock): auto =
   if signed.blck.round > 0:
     var stake: Stake
     for parent in signed.blck.parents:
-      if parent.round == validator.round - 1:
+      if parent.round == signed.blck.round - 1:
         stake += validator.committee.stake(parent.author)
     if stake <= 2/3:
       return BlockCheck.invalid(
         "block does not include parents representing >2/3 stake from previous round"
       )
-  BlockCheck.correct(signed.blck)
+  var missing: seq[BlockId]
+  for parent in signed.blck.parents:
+    if validator.rounds.latest.find(parent).isNone:
+      missing.add(parent)
+  if missing.len > 0:
+    return BlockCheck.incomplete(missing)
+  BlockCheck.correct(signed)
 
 func receive*(validator: Validator, correct: CorrectBlock) =
-  validator.rounds.latest.addProposal(correct.blck)
-  validator.updateSkipped(correct.blck)
-  validator.updateCertified(correct.blck)
+  if round =? validator.rounds.latest.find(correct.blck.round):
+    round.addProposal(correct.signedBlock)
+    validator.updateSkipped(correct.blck)
+    validator.updateCertified(correct.blck)
+
+func getBlock*(validator: Validator, id: BlockId): auto =
+  validator.rounds.latest.find(id)
 
 func status*(validator: Validator, round: uint64, author: CommitteeMember): auto =
   if round =? validator.rounds.oldest.find(round):
@@ -129,8 +141,8 @@ func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
         slotProposal.certify(anchorProposal)
         return
       without parentBlock =? round.find(parent):
-        discard
-      todo.add(parentBlock.parents)
+        raiseAssert "parent block not found"
+      todo.add(parentBlock.blck.parents)
   slot.skip()
 
 iterator committed*(validator: Validator): auto =

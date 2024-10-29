@@ -37,6 +37,15 @@ proc example*(
   let transactions = seq[Transaction].example
   T.new(author, round, parents, transactions)
 
+proc example*(
+  T: type SignedBlock,
+  author = CommitteeMember.example,
+  round = uint64.example
+): T =
+  let identity = Identity[T.Signing].example
+  let blck = Block[T.Hashing].example(author = author, round = round)
+  identity.sign(blck)
+
 proc example*[T](_: type seq[T], length=0..10): seq[T] =
   let size = rand(length)
   newSeqWith(size, T.example)

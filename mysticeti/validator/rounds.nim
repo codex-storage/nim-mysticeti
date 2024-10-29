@@ -3,11 +3,11 @@ import ./round
 
 export round
 
-type Rounds*[Hashing] = object
-  oldest, latest: Round[Hashing]
+type Rounds*[Signing, Hashing] = object
+  oldest, latest: Round[Signing, Hashing]
 
 func init*(T: type Rounds, slots: int, start: uint64 = 0): T =
-  let round = Round[T.Hashing].new(start, slots)
+  let round = Round[T.Signing, T.Hashing].new(start, slots)
   T(oldest: round, latest: round)
 
 func oldest*(rounds: Rounds): auto =
@@ -24,7 +24,7 @@ func wave*(rounds: Rounds): auto =
       return some (proposing, voting, certifying)
 
 func addNewRound*(rounds: var Rounds) =
-  rounds.latest = Round[Rounds.Hashing].new(rounds.latest)
+  rounds.latest = Round[Rounds.Signing, Rounds.Hashing].new(rounds.latest)
 
 func removeOldestRound*(rounds: var Rounds) =
   assert rounds.oldest.next.isSome

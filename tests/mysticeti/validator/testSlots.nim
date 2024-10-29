@@ -6,8 +6,9 @@ suite "Proposer Slots":
 
   type Block = mysticeti.Block[MockHashing]
   type BlockId = mysticeti.BlockId[MockHashing]
-  type Proposal = slots.Proposal[MockHashing]
-  type ProposerSlot = slots.ProposerSlot[MockHashing]
+  type SignedBlock = mysticeti.SignedBlock[MockSigning, MockHashing]
+  type Proposal = slots.Proposal[MockSigning, MockHashing]
+  type ProposerSlot = slots.ProposerSlot[MockSigning, MockHashing]
 
   var slot: ProposerSlot
 
@@ -24,19 +25,19 @@ suite "Proposer Slots":
     check slot.proposal == none Proposal
 
   test "blocks can be added to slots, and they become proposals":
-    let blocks = seq[Block].example
+    let blocks = seq[SignedBlock].example
     for blck in blocks:
       slot.addProposal(blck)
     for blck in blocks:
-      check slot.proposals.anyIt(it.blck == blck)
+      check slot.proposals.anyIt(it.blck == blck.blck)
 
   test "proposals have no certificates initially":
-    slot.addProposal(Block.example)
+    slot.addProposal(SignedBlock.example)
     let proposal = slot.proposals[0]
     check proposal.certificates.len == 0
 
   test "proposals can be certified by other blocks":
-    slot.addProposal(Block.example)
+    slot.addProposal(SignedBlock.example)
     let proposal = slot.proposals[0]
     let certificate1, certificate2 = BlockId.example
     proposal.certifyBy(certificate1, Stake(1/9))
@@ -44,7 +45,7 @@ suite "Proposer Slots":
     check proposal.certificates == @[certificate1, certificate2]
 
   test "slots can be committed when a proposal is certified by >2/3 stake":
-    slot.addProposal(Block.example)
+    slot.addProposal(SignedBlock.example)
     let proposal = slot.proposals[0]
     proposal.certifyBy(BlockId.example, 1/3)
     check slot.status == SlotStatus.undecided
@@ -54,8 +55,8 @@ suite "Proposer Slots":
     check slot.status == SlotStatus.commit
 
   test "slots choose a proposal when it is certified by >2/3 stake":
-    slot.addProposal(Block.example)
-    slot.addProposal(Block.example)
+    slot.addProposal(SignedBlock.example)
+    slot.addProposal(SignedBlock.example)
     let proposal = slot.proposals[1]
     proposal.certifyBy(BlockId.example, 1/3)
     check slot.proposal == none Proposal
@@ -66,21 +67,21 @@ suite "Proposer Slots":
 
   test "proposals can be certified by an anchor":
     let anchor = ProposerSlot.new()
-    anchor.addProposal(Block.example)
+    anchor.addProposal(SignedBlock.example)
     anchor.proposals[0].certifyBy(BlockId.example, 3/4)
-    slot.addProposal(Block.example)
+    slot.addProposal(SignedBlock.example)
     let proposal = slot.proposals[0]
     proposal.certify(!anchor.proposal)
     check slot.status == SlotStatus.commit
     check slot.proposal == some proposal
 
   test "committing a slot marks it as committed and returns the chosen block":
-    let block1, block2 = Block.example
+    let block1, block2 = SignedBlock.example
     slot.addProposal(block1)
     slot.addProposal(block2)
     let proposal = slot.proposals[1]
     proposal.certifyBy(BlockId.example, 3/4)
-    check slot.commit() == block2
+    check slot.commit() == block2.blck
     check slot.status == SlotStatus.committed
 
   test "slots can be skipped when >2/3 stake skip it":

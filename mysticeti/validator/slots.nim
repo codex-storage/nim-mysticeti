@@ -3,13 +3,13 @@ import ../blocks
 import ../committee
 
 type
-  ProposerSlot*[Hashing] = ref object
-    proposals: seq[Proposal[Hashing]]
+  ProposerSlot*[Signing, Hashing] = ref object
+    proposals: seq[Proposal[Signing, Hashing]]
     skippedBy: Stake
     status: SlotStatus
-  Proposal*[Hashing] = ref object
-    slot: ProposerSlot[Hashing]
-    blck: Block[Hashing]
+  Proposal*[Signing, Hashing] = ref object
+    slot: ProposerSlot[Signing, Hashing]
+    signedBlock: SignedBlock[Signing, Hashing]
     certifiedBy: Stake
     certificates: seq[BlockId[Hashing]]
   SlotStatus* {.pure.} = enum
@@ -30,14 +30,19 @@ func proposal*(slot: ProposerSlot): auto =
 func status*(slot: ProposerSlot): auto =
   slot.status
 
+func signedBlock*(proposal: Proposal): auto =
+  proposal.signedBlock
+
 func blck*(proposal: Proposal): auto =
-  proposal.blck
+  proposal.signedBlock.blck
 
 func certificates*(proposal: Proposal): auto =
   proposal.certificates
 
-func addProposal*(slot: ProposerSlot, blck: Block) =
-  let proposal = Proposal[Block.Hashing](slot: slot, blck: blck)
+func addProposal*(slot: ProposerSlot, signedBlock: SignedBlock) =
+  let proposal = Proposal[SignedBlock.Signing, SignedBlock.Hashing](
+    slot: slot, signedBlock: signedBlock
+  )
   slot.proposals.add(proposal)
 
 func skipBy*(slot: ProposerSlot, stake: Stake) =

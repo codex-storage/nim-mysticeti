@@ -5,15 +5,15 @@ type
     invalid
     incomplete
     correct
-  BlockCheck*[Hashing] = object
+  BlockCheck*[Signing, Hashing] = object
     case verdict: BlockVerdict
     of invalid:
       reason: string
     of incomplete:
       missing: seq[BlockId[Hashing]]
     of correct:
-      blck: CorrectBlock[Hashing]
-  CorrectBlock*[Hashing] = distinct Block[Hashing]
+      blck: CorrectBlock[Signing, Hashing]
+  CorrectBlock*[Signing, Hashing] = distinct SignedBlock[Signing, Hashing]
 
 func invalid*(T: type BlockCheck, reason: string): T =
   T(verdict: BlockVerdict.invalid, reason: reason)
@@ -21,8 +21,9 @@ func invalid*(T: type BlockCheck, reason: string): T =
 func incomplete*(T: type BlockCheck; missing: seq[BlockId]): T =
   T(verdict: BlockVerdict.incomplete, missing: missing)
 
-func correct*(T: type BlockCheck, blck: Block): T =
-  T(verdict: BlockVerdict.correct, blck: CorrectBlock[Block.Hashing](blck))
+func correct*(T: type BlockCheck, signedBlock: SignedBlock): T =
+  let blck = CorrectBlock[SignedBlock.Signing, SignedBlock.Hashing](signedBlock)
+  T(verdict: BlockVerdict.correct, blck: blck)
 
 func verdict*(check: BlockCheck): BlockVerdict =
   check.verdict
@@ -36,5 +37,8 @@ func missing*(check: BlockCheck): auto =
 func blck*(check: BlockCheck): auto =
   check.blck
 
+func signedBlock*(correct: CorrectBlock): auto =
+  SignedBlock[CorrectBlock.Signing, CorrectBlock.Hashing](correct)
+
 func blck*(correct: CorrectBlock): auto =
-  Block[CorrectBlock.Hashing](correct)
+  correct.signedBlock.blck

@@ -6,8 +6,9 @@ import mysticeti/validator/round
 
 suite "Validator Round":
 
-  type Round = round.Round[MockHashing]
+  type Round = round.Round[MockSigning, MockHashing]
   type Block = mysticeti.Block[MockHashing]
+  type SignedBlock = mysticeti.SignedBlock[MockSigning, MockHashing]
 
   test "rounds have a number":
     check Round.new(0, 1).number == 0
@@ -34,22 +35,22 @@ suite "Validator Round":
 
   test "round stores proposed blocks in the corresponding slots":
     let round = Round.new(0, 4)
-    let block1 = Block.example(author = CommitteeMember(1), round = 0)
-    let block2 = Block.example(author = CommitteeMember(2), round = 0)
-    let block3 = Block.example(author = CommitteeMember(2), round = 0)
+    let block1 = SignedBlock.example(author = CommitteeMember(1), round = 0)
+    let block2 = SignedBlock.example(author = CommitteeMember(2), round = 0)
+    let block3 = SignedBlock.example(author = CommitteeMember(2), round = 0)
     round.addProposal(block1)
     round.addProposal(block2)
     round.addProposal(block3)
     let slot1 = round[CommitteeMember(1)]
     check slot1.proposals.len == 1
-    check slot1.proposals[0].blck == block1
+    check slot1.proposals[0].blck == block1.blck
     let slot2 = round[CommitteeMember(2)]
     check slot2.proposals.len == 2
-    check slot2.proposals[0].blck == block2
-    check slot2.proposals[1].blck == block3
+    check slot2.proposals[0].blck == block2.blck
+    check slot2.proposals[1].blck == block3.blck
 
   test "round does not accept blocks meant for different rounds":
-    let blck = Block.example(author = CommitteeMember(0), round = 42)
+    let blck = SignedBlock.example(author = CommitteeMember(0), round = 42)
     let round42 = Round.new(42, 4)
     let round43 = Round.new(43, 4)
     round42.addProposal(blck)
@@ -90,17 +91,17 @@ suite "Validator Round":
     let first = Round.new(42, 4)
     let second = Round.new(first)
     let third = Round.new(second)
-    let block1 = Block.example(author = CommitteeMember(1), round = 42)
-    let block2 = Block.example(author = CommitteeMember(2), round = 43)
-    let block3 = Block.example(author = CommitteeMember(2), round = 43)
+    let block1 = SignedBlock.example(author = CommitteeMember(1), round = 42)
+    let block2 = SignedBlock.example(author = CommitteeMember(2), round = 43)
+    let block3 = SignedBlock.example(author = CommitteeMember(2), round = 43)
     first.addProposal(block1)
     second.addProposal(block2)
     second.addProposal(block3)
     for round in [first, second, third]:
-      check round.find(block1.id) == some block1
-      check round.find(block2.id) == some block2
-      check round.find(block3.id) == some block3
-      check round.find(Block.example.id) == none Block
+      check round.find(block1.blck.id) == some block1
+      check round.find(block2.blck.id) == some block2
+      check round.find(block3.blck.id) == some block3
+      check round.find(Block.example.id) == none SignedBlock
 
   test "round can be removed from a doubly linked list":
     let first = Round.new(42, 4)
@@ -141,27 +142,27 @@ suite "Validator Round":
     check slots[3] == round[CommitteeMember(1)]
 
   test "proposals are ordered round-robin as well":
-    var blocks: seq[Block]
-    blocks.add(Block.example(author = CommitteeMember(0), round = 2))
-    blocks.add(Block.example(author = CommitteeMember(0), round = 2))
-    blocks.add(Block.example(author = CommitteeMember(1), round = 2))
-    blocks.add(Block.example(author = CommitteeMember(1), round = 2))
-    blocks.add(Block.example(author = CommitteeMember(2), round = 2))
-    blocks.add(Block.example(author = CommitteeMember(2), round = 2))
-    blocks.add(Block.example(author = CommitteeMember(3), round = 2))
-    blocks.add(Block.example(author = CommitteeMember(3), round = 2))
+    var blocks: seq[SignedBlock]
+    blocks.add(SignedBlock.example(author = CommitteeMember(0), round = 2))
+    blocks.add(SignedBlock.example(author = CommitteeMember(0), round = 2))
+    blocks.add(SignedBlock.example(author = CommitteeMember(1), round = 2))
+    blocks.add(SignedBlock.example(author = CommitteeMember(1), round = 2))
+    blocks.add(SignedBlock.example(author = CommitteeMember(2), round = 2))
+    blocks.add(SignedBlock.example(author = CommitteeMember(2), round = 2))
+    blocks.add(SignedBlock.example(author = CommitteeMember(3), round = 2))
+    blocks.add(SignedBlock.example(author = CommitteeMember(3), round = 2))
     let round = Round.new(2, 4)
     for blck in blocks:
       round.addProposal(blck)
     let proposals = toSeq(round.proposals)
-    check proposals[0].blck == blocks[4]
-    check proposals[1].blck == blocks[5]
-    check proposals[2].blck == blocks[6]
-    check proposals[3].blck == blocks[7]
-    check proposals[4].blck == blocks[0]
-    check proposals[5].blck == blocks[1]
-    check proposals[6].blck == blocks[2]
-    check proposals[7].blck == blocks[3]
+    check proposals[0].blck == blocks[4].blck
+    check proposals[1].blck == blocks[5].blck
+    check proposals[2].blck == blocks[6].blck
+    check proposals[3].blck == blocks[7].blck
+    check proposals[4].blck == blocks[0].blck
+    check proposals[5].blck == blocks[1].blck
+    check proposals[6].blck == blocks[2].blck
+    check proposals[7].blck == blocks[3].blck
 
   test "doubly linked list can be used to find the anchor for a round":
     let proposing = Round.new(2, 4)
