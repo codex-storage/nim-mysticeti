@@ -143,6 +143,31 @@ suite "Multiple Validators":
     check checked.verdict == BlockVerdict.incomplete
     check checked.missing == @[parents[0].blck.id]
 
+  test "does not refuse proposals with an unknown parent block that is too old":
+    # first round: nobody receives proposal from validator 0
+    discard exchangeProposals {
+      0: @[],
+      1: @[0, 1, 2, 3],
+      2: @[0, 1, 2, 3],
+      3: @[0, 1, 2, 3]
+    }
+    # for the second to the sixth round, validator 0 is down
+    for _ in 2..6:
+      for validator in validators[1..3]:
+        validator.nextRound()
+      discard exchangeProposals {
+        1: @[1, 2, 3],
+        2: @[1, 2, 3],
+        3: @[1, 2, 3]
+      }
+    # validator 1 cleans up old blocks
+    discard toSeq(validators[1].committed())
+    # validator 0 comes back online and creates block for second round
+    validators[0].nextRound()
+    let proposal = validators[0].propose(seq[Transaction].example)
+    # validator 1 accepts block even though parent has already been cleaned up
+    check validators[1].check(proposal).verdict == BlockVerdict.correct
+
   test "refuses proposals with a round number that is too high":
     discard exchangeProposals()
     validators[0].nextRound()

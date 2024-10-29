@@ -109,8 +109,9 @@ func check*(validator: Validator, signed: SignedBlock): auto =
       )
   var missing: seq[BlockId]
   for parent in signed.blck.parents:
-    if validator.rounds.latest.find(parent).isNone:
-      missing.add(parent)
+    if parent.round >= validator.rounds.oldest.number:
+      if validator.rounds.latest.find(parent).isNone:
+        missing.add(parent)
   if missing.len > 0:
     return BlockCheck.incomplete(missing)
   BlockCheck.correct(signed)
