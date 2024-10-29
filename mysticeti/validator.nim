@@ -89,6 +89,8 @@ func check*(validator: Validator, signed: SignedBlock): auto =
     return BlockCheck.invalid("block is not signed by a committee member")
   if member != signed.blck.author:
     return BlockCheck.invalid("block is not signed by its author")
+  if signed.blck.round > validator.round:
+    return BlockCheck.invalid("block has a round number that is too high")
   for parent in signed.blck.parents:
     if parent.round >= signed.blck.round:
       return BlockCheck.invalid("block has a parent from an invalid round")

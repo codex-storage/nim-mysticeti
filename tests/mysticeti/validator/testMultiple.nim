@@ -114,6 +114,7 @@ suite "Multiple Validators":
 
   test "refuses proposals without >2/3 parents from the previous round":
     let parents = exchangeProposals().mapIt(it.blck.id)
+    nextRound()
     let blck = Block.new(
       CommitteeMember(0),
       round = 1,
@@ -141,6 +142,14 @@ suite "Multiple Validators":
     let checked = validators[1].check(proposal)
     check checked.verdict == BlockVerdict.incomplete
     check checked.missing == @[parents[0].blck.id]
+
+  test "refuses proposals with a round number that is too high":
+    discard exchangeProposals()
+    validators[0].nextRound()
+    let proposal = validators[0].propose(seq[Transaction].example)
+    let checked = validators[1].check(proposal)
+    check checked.verdict == BlockVerdict.invalid
+    check checked.reason == "block has a round number that is too high"
 
   test "skips blocks that are ignored by >2f validators":
     # first round: other validators do not receive proposal from first validator
