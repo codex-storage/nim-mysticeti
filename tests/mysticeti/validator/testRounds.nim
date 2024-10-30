@@ -51,19 +51,3 @@ suite "List of Validator Rounds":
     rounds.removeOldestRound()
     expect Defect:
       rounds.removeOldestRound()
-
-  test "a wave consists of the last three rounds":
-    var rounds = Rounds.init(slots = 4)
-    rounds.addNewRound()
-    check rounds.wave.isNone
-    rounds.addNewRound()
-    var wave: (Round, Round, Round)
-    wave = !rounds.wave()
-    check wave[0].number == 0
-    check wave[1].number == 1
-    check wave[2].number == 2
-    rounds.addNewRound()
-    wave = !rounds.wave()
-    check wave[0].number == 1
-    check wave[1].number == 2
-    check wave[2].number == 3

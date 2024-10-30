@@ -16,13 +16,6 @@ func oldest*(rounds: Rounds): auto =
 func latest*(rounds: Rounds): auto =
   rounds.latest
 
-func wave*(rounds: Rounds): auto =
-  # A wave consists of 3 rounds: proposing -> voting -> certifying
-  let certifying = rounds.latest
-  if voting =? certifying.previous:
-    if proposing =? voting.previous:
-      return some (proposing, voting, certifying)
-
 func addNewRound*(rounds: var Rounds) =
   rounds.latest = Round[Rounds.Signing, Rounds.Hashing].new(rounds.latest)
 

@@ -258,6 +258,35 @@ suite "Multiple Validators":
     validators[0].receive(validators[0].check(certificates[2]).blck)
     check validators[0].status(round, author) == some SlotStatus.commit
 
+  test "commits blocks that are certified by blocks that are received later":
+    # first round: proposing
+    let proposals = exchangeProposals()
+    # second round: first validator does not receive votes
+    nextRound()
+    discard exchangeProposals {
+      1: @[1, 2, 3],
+      2: @[1, 2, 3],
+      3: @[1, 2, 3]
+    }
+    # third round: first validator does not receive certificates
+    nextRound()
+    discard exchangeProposals {
+      1: @[1, 2, 3],
+      2: @[1, 2, 3],
+      3: @[1, 2, 3]
+    }
+    # fourth round: first validator receives votes and certificates, because
+    # they are the parents of the blocks from this round
+    nextRound()
+    discard exchangeProposals {
+      1: @[0, 1, 2, 3],
+      2: @[0, 1, 2, 3],
+      3: @[0, 1, 2, 3]
+    }
+    let round = proposals[0].blck.round
+    let author = proposals[0].blck.author
+    check validators[0].status(round, author) == some SlotStatus.commit
+
   test "can iterate over the list of committed blocks":
     # blocks proposed in first round, in order of committee members
     let first = exchangeProposals().mapIt(it.blck)

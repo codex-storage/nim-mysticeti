@@ -53,7 +53,9 @@ func updateSkipped(validator: Validator, supporter: Block) =
         slot.skipBy(stake)
 
 func updateCertified(validator: Validator, certificate: Block) =
-  without (proposing, voting, _) =? validator.rounds.wave:
+  without certifying =? validator.rounds.latest.find(certificate.round) and
+          voting =? certifying.previous and
+          proposing =? voting.previous:
     return
   for proposal in proposing.proposals:
     var support: Stake
