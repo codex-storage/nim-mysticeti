@@ -37,7 +37,7 @@ suite "Multiple Validators":
   proc exchangeProposals(exchanges: openArray[(int, seq[int])]): seq[SignedBlock] =
     for (proposer, receivers) in exchanges:
       let proposer = validators[proposer]
-      let proposal = proposer.propose(seq[Transaction].example)
+      let proposal = !proposer.propose(seq[Transaction].example)
       for receiver in receivers:
         let receiver = validators[receiver]
         exchangeProposal(proposer, receiver, proposal)
@@ -53,12 +53,26 @@ suite "Multiple Validators":
   test "validators include blocks from previous round as parents":
     let previous = exchangeProposals()
     nextRound()
-    let proposal = validators[0].propose(seq[Transaction].example)
+    let proposal = !validators[0].propose(seq[Transaction].example)
     for parent in previous:
       check parent.blck.id in proposal.blck.parents
 
+  test "validator can't propose a block with too few parents":
+    # first round: validator 0 does not receive enough proposals for >2/3 stake
+    discard exchangeProposals {
+      0: @[0, 1, 2, 3],
+      1: @[1, 2, 3],
+      2: @[1, 2, 3],
+      3: @[0, 1, 2, 3]
+    }
+    # second round: validator 0 cannot propose a block
+    nextRound()
+    let outcome = validators[0].propose(seq[Transaction].example)
+    check outcome.isFailure
+    check outcome.error.msg == "not enough parents to represent > 2/3 stake"
+
   test "by default received proposals are undecided":
-    let proposal = validators[1].propose(seq[Transaction].example)
+    let proposal = !validators[1].propose(seq[Transaction].example)
     let round = proposal.blck.round
     let author = proposal.blck.author
     let checked = validators[0].check(proposal)
@@ -66,7 +80,7 @@ suite "Multiple Validators":
     check validators[0].status(round, author) == some SlotStatus.undecided
 
   test "refuses proposals that are not signed by the author":
-    let proposal = validators[1].propose(seq[Transaction].example)
+    let proposal = !validators[1].propose(seq[Transaction].example)
     let signedByOther = identities[2].sign(proposal.blck)
     let checked = validators[0].check(signedByOther)
     check checked.verdict == BlockVerdict.invalid
@@ -76,7 +90,7 @@ suite "Multiple Validators":
     let otherIdentity = Identity.example
     let otherCommittee = Committee.new({otherIdentity.identifier: 1/1})
     let otherValidator = !Validator.new(otherIdentity, otherCommittee)
-    let proposal = otherValidator.propose(seq[Transaction].example)
+    let proposal = !otherValidator.propose(seq[Transaction].example)
     let checked = validators[0].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block is not signed by a committee member"
@@ -137,7 +151,7 @@ suite "Multiple Validators":
     }
     # second round: validator 0 creates block with parent that others didn't see
     nextRound()
-    let proposal = validators[0].propose(seq[Transaction].example)
+    let proposal = !validators[0].propose(seq[Transaction].example)
     # other validator will not accept block before it receives the parent
     let checked = validators[1].check(proposal)
     check checked.verdict == BlockVerdict.incomplete
@@ -164,14 +178,14 @@ suite "Multiple Validators":
     discard toSeq(validators[1].committed())
     # validator 0 comes back online and creates block for second round
     validators[0].nextRound()
-    let proposal = validators[0].propose(seq[Transaction].example)
+    let proposal = !validators[0].propose(seq[Transaction].example)
     # validator 1 accepts block even though parent has already been cleaned up
     check validators[1].check(proposal).verdict == BlockVerdict.correct
 
   test "refuses proposals with a round number that is too high":
     discard exchangeProposals()
     validators[0].nextRound()
-    let proposal = validators[0].propose(seq[Transaction].example)
+    let proposal = !validators[0].propose(seq[Transaction].example)
     let checked = validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block has a round number that is too high"
@@ -194,7 +208,7 @@ suite "Multiple Validators":
     let author = proposals[0].blck.author
     # second round: voting
     nextRound()
-    let votes = validators.mapIt(it.propose(seq[Transaction].example))
+    let votes = validators.mapIt(!it.propose(seq[Transaction].example))
     validators[0].receive(validators[0].check(votes[1]).blck)
     validators[0].receive(validators[0].check(votes[2]).blck)
     check validators[0].status(round, author) == some SlotStatus.undecided
@@ -211,7 +225,7 @@ suite "Multiple Validators":
     discard exchangeProposals()
     # third round: certifying
     nextRound()
-    let certificates = validators.mapIt(it.propose(seq[Transaction].example))
+    let certificates = validators.mapIt(!it.propose(seq[Transaction].example))
     validators[0].receive(validators[0].check(certificates[1]).blck)
     check validators[0].status(round, author) == some SlotStatus.undecided
     validators[0].receive(validators[0].check(certificates[2]).blck)

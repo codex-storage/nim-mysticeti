@@ -65,22 +65,31 @@ func updateCertified(validator: Validator, certificate: Block) =
       proposal.certifyBy(certificate.id, stake)
 
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
-  assert validator.rounds.latest[validator.membership].proposals.len == 0
+  type SignedBlock = blocks.SignedBlock[Validator.Signing, Validator.Hashing]
+  let round = validator.rounds.latest
+  if round[validator.membership].proposals.len > 0:
+    return SignedBlock.failure "already proposed this round"
   var parents: seq[BlockId[Validator.Hashing]]
-  if previous =? validator.rounds.latest.previous:
+  var parentStake: Stake
+  if previous =? round.previous:
     for slot in previous.slots:
       if slot.proposals.len == 1:
-        parents.add(slot.proposals[0].blck.id)
+        let parent = slot.proposals[0].blck
+        parents.add(parent.id)
+        parentStake += validator.committee.stake(parent.author)
+  if round.number > 0:
+    if parentStake <= 2/3:
+      return SignedBlock.failure "not enough parents to represent > 2/3 stake"
   let blck = Block.new(
     author = validator.membership,
-    round = validator.round,
+    round = round.number,
     parents = parents,
     transactions = transactions
   )
   let signedBlock = validator.identity.sign(blck)
-  validator.rounds.latest.addProposal(signedBlock)
+  round.addProposal(signedBlock)
   validator.updateCertified(blck)
-  signedBlock
+  success signedBlock
 
 func check*(validator: Validator, signed: SignedBlock): auto =
   type BlockCheck = checks.BlockCheck[SignedBlock.Signing, SignedBlock.Hashing]

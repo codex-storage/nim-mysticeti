@@ -24,18 +24,19 @@ suite "Single Validator":
     check validator.round == 3
 
   test "validators sign their proposals":
-    let proposal = validator.propose(seq[Transaction].example)
+    let proposal = !validator.propose(seq[Transaction].example)
     check proposal.blck.round == validator.round
     check proposal.blck.author == validator.membership
     check proposal.signer == validator.identifier
 
   test "validator cannot propose more than once in a round":
-    discard validator.propose(seq[Transaction].example)
-    expect AssertionDefect:
-      discard validator.propose(seq[Transaction].example)
+    discard !validator.propose(seq[Transaction].example)
+    let outcome = validator.propose(seq[Transaction].example)
+    check outcome.isFailure
+    check outcome.error.msg == "already proposed this round"
 
   test "by default our own proposals are undecided":
-    let proposal = validator.propose(seq[Transaction].example)
+    let proposal = !validator.propose(seq[Transaction].example)
     let round = proposal.blck.round
     let author = proposal.blck.author
     check validator.status(round, author) == some SlotStatus.undecided
