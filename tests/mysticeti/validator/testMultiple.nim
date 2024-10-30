@@ -215,6 +215,33 @@ suite "Multiple Validators":
     validators[0].receive(validators[0].check(votes[3]).blck)
     check validators[0].status(round, author) == some SlotStatus.skip
 
+  test "skips blocks that are ignored by blocks that are received later":
+    # first round: other validators do not receive proposal from first validator
+    let proposals = exchangeProposals {
+      0: @[],
+      1: @[0, 1, 2, 3],
+      2: @[0, 1, 2, 3],
+      3: @[0, 1, 2, 3]
+    }
+    # second round: first validator does not receive votes
+    nextRound()
+    discard exchangeProposals {
+      1: @[1, 2, 3],
+      2: @[1, 2, 3],
+      3: @[1, 2, 3]
+    }
+    # third round: first validator receives certificates, and also the votes
+    # from the previous round because they are the parents of the certificates
+    nextRound()
+    discard exchangeProposals {
+      1: @[0, 1, 2, 3],
+      2: @[0, 1, 2, 3],
+      3: @[0, 1, 2, 3]
+    }
+    let round = proposals[0].blck.round
+    let author = proposals[0].blck.author
+    check validators[0].status(round, author) == some SlotStatus.skip
+
   test "commits blocks that have >2f certificates":
     # first round: proposing
     let proposal = exchangeProposals()[0]

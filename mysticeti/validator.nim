@@ -44,7 +44,8 @@ func skips(blck: Block, round: uint64, author: CommitteeMember): bool =
   true
 
 func updateSkipped(validator: Validator, supporter: Block) =
-  if previous =? validator.rounds.latest.previous:
+  if round =? validator.rounds.latest.find(supporter.round) and
+     previous =? round.previous:
     for member in previous.members:
       let slot = previous[member]
       if supporter.skips(previous.number, member):
