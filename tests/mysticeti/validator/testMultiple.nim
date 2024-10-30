@@ -196,7 +196,7 @@ suite "Multiple Validators":
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block already received"
 
-  test "skips blocks that are ignored by >2f validators":
+  test "skips blocks that are ignored by >2/3 stake":
     # first round: other validators do not receive proposal from first validator
     let proposals = exchangeProposals {
       0: @[],
@@ -242,7 +242,7 @@ suite "Multiple Validators":
     let author = proposals[0].blck.author
     check validators[0].status(round, author) == some SlotStatus.skip
 
-  test "commits blocks that have >2f certificates":
+  test "commits blocks that have certificates representing >2/3 stake":
     # first round: proposing
     let proposal = exchangeProposals()[0]
     let round = proposal.blck.round
