@@ -1,5 +1,6 @@
-import ./mysticeti/testCommittee
 import ./mysticeti/testBlocks
+import ./mysticeti/committee/testCommittee
+import ./mysticeti/committee/testVoting
 import ./mysticeti/validator/testSlots
 import ./mysticeti/validator/testRound
 import ./mysticeti/validator/testRounds

@@ -1,4 +1,4 @@
-import ./basics
+import ../basics
 import mysticeti/committee
 import mysticeti/signing
 

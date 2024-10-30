@@ -85,11 +85,11 @@ suite "Proposer Slots":
     check slot.status == SlotStatus.committed
 
   test "slots can be skipped when >2/3 stake skip it":
-    slot.skipBy(1/3)
+    slot.skipBy(CommitteeMember(0), 1/3)
     check slot.status == SlotStatus.undecided
-    slot.skipBy(1/3)
+    slot.skipBy(CommitteeMember(1), 1/3)
     check slot.status == SlotStatus.undecided
-    slot.skipBy(1/1000)
+    slot.skipBy(CommitteeMember(2), 1/1000)
     check slot.status == SlotStatus.skip
 
   test "slots can be skipped immediately":

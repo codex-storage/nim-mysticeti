@@ -49,8 +49,9 @@ func updateSkipped(validator: Validator, supporter: Block) =
     for member in previous.members:
       let slot = previous[member]
       if supporter.skips(previous.number, member):
-        let stake = validator.committee.stake(supporter.author)
-        slot.skipBy(stake)
+        let author = supporter.author
+        let stake = validator.committee.stake(author)
+        slot.skipBy(author, stake)
 
 func updateCertified(validator: Validator, certificate: Block) =
   without certifying =? validator.rounds.latest.find(certificate.round) and
@@ -58,12 +59,14 @@ func updateCertified(validator: Validator, certificate: Block) =
           proposing =? voting.previous:
     return
   for proposal in proposing.proposals:
-    var support: Stake
+    var support: Voting
     for vote in voting.proposals:
       if proposal.blck.id in vote.blck.parents:
         if vote.blck.id in certificate.parents:
-          support += validator.committee.stake(vote.blck.author)
-    if support > 2/3:
+          let author = vote.blck.author
+          let stake = validator.committee.stake(author)
+          support.add(author, stake)
+    if support.stake > 2/3:
       let stake = validator.committee.stake(certificate.author)
       proposal.certifyBy(certificate.id, stake)
 
