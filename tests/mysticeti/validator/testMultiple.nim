@@ -35,9 +35,14 @@ suite "Multiple Validators":
       receiver.receive(checked.blck)
 
   proc exchangeProposals(exchanges: openArray[(int, seq[int])]): seq[SignedBlock] =
+    var proposals: seq[SignedBlock]
+    for (proposer, _) in exchanges:
+      let proposer = validators[proposer]
+      proposals.add(!proposer.propose(seq[Transaction].example))
+    proposals.reverse()
     for (proposer, receivers) in exchanges:
       let proposer = validators[proposer]
-      let proposal = !proposer.propose(seq[Transaction].example)
+      let proposal = proposals.pop()
       for receiver in receivers:
         let receiver = validators[receiver]
         exchangeProposal(proposer, receiver, proposal)
@@ -335,3 +340,38 @@ suite "Multiple Validators":
     nextRound()
     discard exchangeProposals()
     check toSeq(validators[0].committed()).contains(proposals[3].blck)
+
+  test "skips blocks using the indirect decision rule":
+    # Modelled after Figure 3f from the Mysticeti paper
+    # first round: proposals
+    let proposals = exchangeProposals {
+      0: @[0, 1, 2, 3],
+      1: @[0, 1],
+      2: @[0, 2, 3],
+      3: @[1, 2, 3]
+    }
+    # second round: voting
+    nextRound()
+    discard exchangeProposals {
+      0: @[0, 1, 3],
+      1: @[0, 1, 3],
+      2: @[0, 3],
+      3: @[1, 3]
+    }
+    # third round: certifying
+    nextRound()
+    discard exchangeProposals {
+      0: @[0, 1, 2, 3],
+      1: @[0, 1, 2, 3],
+      3: @[0, 1, 2, 3]
+    }
+    # fourth round: anchor
+    nextRound()
+    discard exchangeProposals()
+    # fifth round: voting on anchor
+    nextRound()
+    discard exchangeProposals()
+    # sixth round: certifying anchor
+    nextRound()
+    discard exchangeProposals()
+    check not toSeq(validators[0].committed()).contains(proposals[1].blck)
