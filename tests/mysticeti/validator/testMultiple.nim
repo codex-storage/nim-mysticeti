@@ -1,4 +1,5 @@
 import ../basics
+import ../simulator
 import mysticeti
 import mysticeti/blocks
 import mysticeti/hashing
@@ -11,17 +12,10 @@ suite "Multiple Validators":
   type SignedBlock = blocks.SignedBlock[MockSigning, MockHashing]
   type Hash = hashing.Hash[MockHashing]
 
-  var validators: seq[Validator]
+  var simulator: NetworkSimulator
 
   setup:
-    let identities = newSeqWith(4, Identity.init())
-    let stakes = identities.mapIt( (it.identifier, 1/4) )
-    let committee = Committee.new(stakes)
-    validators = identities.mapIt(!Validator.new(it, committee))
-
-  proc nextRound =
-    for validator in validators:
-      validator.nextRound()
+    simulator = NetworkSimulator.init()
 
   proc exchangeProposal(proposer, receiver: Validator, proposal: SignedBlock) =
     if receiver != proposer:
@@ -37,28 +31,27 @@ suite "Multiple Validators":
   proc exchangeProposals(exchanges: openArray[(int, seq[int])]): seq[SignedBlock] =
     var proposals: seq[SignedBlock]
     for (proposer, _) in exchanges:
-      let proposer = validators[proposer]
-      proposals.add(!proposer.propose(seq[Transaction].example))
+      proposals.add(!simulator.propose(proposer))
     proposals.reverse()
     for (proposer, receivers) in exchanges:
-      let proposer = validators[proposer]
+      let proposer = simulator.validators[proposer]
       let proposal = proposals.pop()
       for receiver in receivers:
-        let receiver = validators[receiver]
+        let receiver = simulator.validators[receiver]
         exchangeProposal(proposer, receiver, proposal)
       result.add(proposal)
 
   proc exchangeProposals: seq[SignedBlock] =
     var exchanges: seq[(int, seq[int])]
-    for proposer in validators.low..validators.high:
-      let receivers = toSeq[validators.low..validators.high]
+    for proposer in simulator.validators.low..simulator.validators.high:
+      let receivers = toSeq[simulator.validators.low..simulator.validators.high]
       exchanges.add( (proposer, receivers) )
     exchangeProposals(exchanges)
 
   test "validators include blocks from previous round as parents":
     let previous = exchangeProposals()
-    nextRound()
-    let proposal = !validators[0].propose(seq[Transaction].example)
+    simulator.nextRound()
+    let proposal = !simulator.propose(0)
     for parent in previous:
       check parent.blck.id in proposal.blck.parents
 
@@ -71,23 +64,23 @@ suite "Multiple Validators":
       3: @[0, 1, 2, 3]
     }
     # second round: validator 0 cannot propose a block
-    nextRound()
-    let outcome = validators[0].propose(seq[Transaction].example)
+    simulator.nextRound()
+    let outcome = simulator.propose(0)
     check outcome.isFailure
     check outcome.error.msg == "not enough parents to represent > 2/3 stake"
 
   test "by default received proposals are undecided":
-    let proposal = !validators[1].propose(seq[Transaction].example)
+    let proposal = !simulator.propose(1)
     let round = proposal.blck.round
     let author = proposal.blck.author
-    let checked = validators[0].check(proposal)
-    validators[0].receive(checked.blck)
-    check validators[0].status(round, author) == some SlotStatus.undecided
+    let checked = simulator.validators[0].check(proposal)
+    simulator.validators[0].receive(checked.blck)
+    check simulator.validators[0].status(round, author) == some SlotStatus.undecided
 
   test "refuses proposals that are not signed by the author":
-    let proposal = !validators[1].propose(seq[Transaction].example)
-    let signedByOther = identities[2].sign(proposal.blck)
-    let checked = validators[0].check(signedByOther)
+    let proposal = !simulator.propose(1)
+    let signedByOther = simulator.identities[2].sign(proposal.blck)
+    let checked = simulator.validators[0].check(signedByOther)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block is not signed by its author"
 
@@ -96,7 +89,7 @@ suite "Multiple Validators":
     let otherCommittee = Committee.new({otherIdentity.identifier: 1/1})
     let otherValidator = !Validator.new(otherIdentity, otherCommittee)
     let proposal = !otherValidator.propose(seq[Transaction].example)
-    let checked = validators[0].check(proposal)
+    let checked = simulator.validators[0].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block is not signed by a committee member"
 
@@ -104,44 +97,44 @@ suite "Multiple Validators":
     let parents = exchangeProposals().mapIt(it.blck.id)
     let badParentRound = 1'u64
     let badParent = BlockId.new(CommitteeMember(0), badParentRound, Hash.example)
-    nextRound()
+    simulator.nextRound()
     let blck = Block.new(
       CommitteeMember(0),
       round = 1,
       parents & badparent,
       seq[Transaction].example
     )
-    let proposal = identities[0].sign(blck)
-    let checked = validators[1].check(proposal)
+    let proposal = simulator.identities[0].sign(blck)
+    let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block has a parent from an invalid round"
 
   test "refuses proposals that include a parent more than once":
     let parents = exchangeProposals().mapIt(it.blck.id)
     let badParent = parents.sample
-    nextRound()
+    simulator.nextRound()
     let blck = Block.new(
       CommitteeMember(0),
       round = 1,
       parents & badparent,
       seq[Transaction].example
     )
-    let proposal = identities[0].sign(blck)
-    let checked = validators[1].check(proposal)
+    let proposal = simulator.identities[0].sign(blck)
+    let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block includes a parent more than once"
 
   test "refuses proposals without >2/3 parents from the previous round":
     let parents = exchangeProposals().mapIt(it.blck.id)
-    nextRound()
+    simulator.nextRound()
     let blck = Block.new(
       CommitteeMember(0),
       round = 1,
       parents[0..<2],
       seq[Transaction].example
     )
-    let proposal = identities[0].sign(blck)
-    let checked = validators[1].check(proposal)
+    let proposal = simulator.identities[0].sign(blck)
+    let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason ==
       "block does not include parents representing >2/3 stake from previous round"
@@ -155,10 +148,10 @@ suite "Multiple Validators":
       3: @[0, 1, 2, 3],
     }
     # second round: validator 0 creates block with parent that others didn't see
-    nextRound()
-    let proposal = !validators[0].propose(seq[Transaction].example)
+    simulator.nextRound()
+    let proposal = !simulator.propose(0)
     # other validator will not accept block before it receives the parent
-    let checked = validators[1].check(proposal)
+    let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.incomplete
     check checked.missing == @[parents[0].blck.id]
 
@@ -172,7 +165,7 @@ suite "Multiple Validators":
     }
     # for the second to the sixth round, validator 0 is down
     for _ in 2..6:
-      for validator in validators[1..3]:
+      for validator in simulator.validators[1..3]:
         validator.nextRound()
       discard exchangeProposals {
         1: @[1, 2, 3],
@@ -180,24 +173,24 @@ suite "Multiple Validators":
         3: @[1, 2, 3]
       }
     # validator 1 cleans up old blocks
-    discard toSeq(validators[1].committed())
+    discard toSeq(simulator.validators[1].committed())
     # validator 0 comes back online and creates block for second round
-    validators[0].nextRound()
-    let proposal = !validators[0].propose(seq[Transaction].example)
+    simulator.validators[0].nextRound()
+    let proposal = !simulator.propose(0)
     # validator 1 accepts block even though parent has already been cleaned up
-    check validators[1].check(proposal).verdict == BlockVerdict.correct
+    check simulator.validators[1].check(proposal).verdict == BlockVerdict.correct
 
   test "refuses proposals with a round number that is too high":
     discard exchangeProposals()
-    validators[0].nextRound()
-    let proposal = !validators[0].propose(seq[Transaction].example)
-    let checked = validators[1].check(proposal)
+    simulator.validators[0].nextRound()
+    let proposal = !simulator.propose(0)
+    let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block has a round number that is too high"
 
   test "refuses a proposal that was already received":
     let proposals = exchangeProposals()
-    let checked = validators[1].check(proposals[0])
+    let checked = simulator.validators[1].check(proposals[0])
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block already received"
 
@@ -212,13 +205,13 @@ suite "Multiple Validators":
     let round = proposals[0].blck.round
     let author = proposals[0].blck.author
     # second round: voting
-    nextRound()
-    let votes = validators.mapIt(!it.propose(seq[Transaction].example))
-    validators[0].receive(validators[0].check(votes[1]).blck)
-    validators[0].receive(validators[0].check(votes[2]).blck)
-    check validators[0].status(round, author) == some SlotStatus.undecided
-    validators[0].receive(validators[0].check(votes[3]).blck)
-    check validators[0].status(round, author) == some SlotStatus.skip
+    simulator.nextRound()
+    let votes = !simulator.propose()
+    simulator.validators[0].receive(simulator.validators[0].check(votes[1]).blck)
+    simulator.validators[0].receive(simulator.validators[0].check(votes[2]).blck)
+    check simulator.validators[0].status(round, author) == some SlotStatus.undecided
+    simulator.validators[0].receive(simulator.validators[0].check(votes[3]).blck)
+    check simulator.validators[0].status(round, author) == some SlotStatus.skip
 
   test "skips blocks that are ignored by blocks that are received later":
     # first round: other validators do not receive proposal from first validator
@@ -229,7 +222,7 @@ suite "Multiple Validators":
       3: @[0, 1, 2, 3]
     }
     # second round: first validator does not receive votes
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals {
       1: @[1, 2, 3],
       2: @[1, 2, 3],
@@ -237,7 +230,7 @@ suite "Multiple Validators":
     }
     # third round: first validator receives certificates, and also the votes
     # from the previous round because they are the parents of the certificates
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals {
       1: @[0, 1, 2, 3],
       2: @[0, 1, 2, 3],
@@ -245,7 +238,7 @@ suite "Multiple Validators":
     }
     let round = proposals[0].blck.round
     let author = proposals[0].blck.author
-    check validators[0].status(round, author) == some SlotStatus.skip
+    check simulator.validators[0].status(round, author) == some SlotStatus.skip
 
   test "commits blocks that have certificates representing >2/3 stake":
     # first round: proposing
@@ -253,28 +246,28 @@ suite "Multiple Validators":
     let round = proposal.blck.round
     let author = proposal.blck.author
     # second round: voting
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals()
     # third round: certifying
-    nextRound()
-    let certificates = validators.mapIt(!it.propose(seq[Transaction].example))
-    validators[0].receive(validators[0].check(certificates[1]).blck)
-    check validators[0].status(round, author) == some SlotStatus.undecided
-    validators[0].receive(validators[0].check(certificates[2]).blck)
-    check validators[0].status(round, author) == some SlotStatus.commit
+    simulator.nextRound()
+    let certificates = !simulator.propose()
+    simulator.validators[0].receive(simulator.validators[0].check(certificates[1]).blck)
+    check simulator.validators[0].status(round, author) == some SlotStatus.undecided
+    simulator.validators[0].receive(simulator.validators[0].check(certificates[2]).blck)
+    check simulator.validators[0].status(round, author) == some SlotStatus.commit
 
   test "commits blocks that are certified by blocks that are received later":
     # first round: proposing
     let proposals = exchangeProposals()
     # second round: first validator does not receive votes
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals {
       1: @[1, 2, 3],
       2: @[1, 2, 3],
       3: @[1, 2, 3]
     }
     # third round: first validator does not receive certificates
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals {
       1: @[1, 2, 3],
       2: @[1, 2, 3],
@@ -282,7 +275,7 @@ suite "Multiple Validators":
     }
     # fourth round: first validator receives votes and certificates, because
     # they are the parents of the blocks from this round
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals {
       1: @[0, 1, 2, 3],
       2: @[0, 1, 2, 3],
@@ -290,22 +283,22 @@ suite "Multiple Validators":
     }
     let round = proposals[0].blck.round
     let author = proposals[0].blck.author
-    check validators[0].status(round, author) == some SlotStatus.commit
+    check simulator.validators[0].status(round, author) == some SlotStatus.commit
 
   test "can iterate over the list of committed blocks":
     # blocks proposed in first round, in order of committee members
     let first = exchangeProposals().mapIt(it.blck)
-    nextRound()
+    simulator.nextRound()
     # blocks proposed in second round, round-robin order
     let second = exchangeProposals().mapIt(it.blck).rotatedLeft(1)
-    nextRound()
+    simulator.nextRound()
     # certify blocks from the first round
     discard exchangeProposals()
-    check toSeq(validators[0].committed()) == first
+    check toSeq(simulator.validators[0].committed()) == first
     # certify blocks from the second round
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals()
-    check toSeq(validators[0].committed()) == second
+    check toSeq(simulator.validators[0].committed()) == second
 
   test "commits blocks using the indirect decision rule":
     # first round: proposals
@@ -316,7 +309,7 @@ suite "Multiple Validators":
       3: @[1, 2, 3]
     }
     # second round: voting
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals {
       0: @[0, 1, 3],
       1: @[0, 1, 3],
@@ -324,22 +317,22 @@ suite "Multiple Validators":
       3: @[1, 3]
     }
     # third round: certifying
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals {
       0: @[0, 1, 2, 3],
       1: @[0, 1, 2, 3],
       3: @[0, 1, 2, 3]
     }
     # fourth round: anchor
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals()
     # fifth round: voting on anchor
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals()
     # sixth round: certifying anchor
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals()
-    check toSeq(validators[0].committed()).contains(proposals[3].blck)
+    check toSeq(simulator.validators[0].committed()).contains(proposals[3].blck)
 
   test "skips blocks using the indirect decision rule":
     # Modelled after Figure 3f from the Mysticeti paper
@@ -351,7 +344,7 @@ suite "Multiple Validators":
       3: @[1, 2, 3]
     }
     # second round: voting
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals {
       0: @[0, 1, 3],
       1: @[0, 1, 3],
@@ -359,19 +352,19 @@ suite "Multiple Validators":
       3: @[1, 3]
     }
     # third round: certifying
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals {
       0: @[0, 1, 2, 3],
       1: @[0, 1, 2, 3],
       3: @[0, 1, 2, 3]
     }
     # fourth round: anchor
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals()
     # fifth round: voting on anchor
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals()
     # sixth round: certifying anchor
-    nextRound()
+    simulator.nextRound()
     discard exchangeProposals()
-    check not toSeq(validators[0].committed()).contains(proposals[1].blck)
+    check not toSeq(simulator.validators[0].committed()).contains(proposals[1].blck)
