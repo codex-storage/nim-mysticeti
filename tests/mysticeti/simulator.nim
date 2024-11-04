@@ -32,3 +32,37 @@ proc propose*(simulator: NetworkSimulator, validatorIndex: int): ?!SignedBlock =
 
 proc propose*(simulator: NetworkSimulator): ?!seq[SignedBlock] =
   success simulator.validators.mapit(? it.propose(seq[Transaction].example))
+
+proc exchangeBlock*(proposer, receiver: Validator, blck: SignedBlock): ?!void =
+  # check validity of block
+  var checked = receiver.check(blck)
+  # exchange missing parent blocks
+  if checked.verdict == BlockVerdict.incomplete:
+    for missing in checked.missing:
+      if parent =? proposer.getBlock(missing):
+        ? exchangeBlock(proposer, receiver, parent)
+    checked = receiver.check(blck)
+  # send proposal
+  receiver.receive(checked.blck)
+  success()
+
+proc exchangeProposals*(simulator: NetworkSimulator, exchanges: openArray[(int, seq[int])]): ?!seq[SignedBlock] =
+  # proposes new blocks and exchanges them with the specified receivers
+  let proposals = exchanges.mapIt(? simulator.propose(it[0]))
+  for (index, exchange) in exchanges.pairs:
+    let (proposer, receivers) = exchange
+    let proposal = proposals[index]
+    for receiver in receivers:
+      if receiver != proposer:
+        let proposingValidator = simulator.validators[proposer]
+        let receivingValidator = simulator.validators[receiver]
+        ? exchangeBlock(proposingValidator, receivingValidator, proposal)
+  success proposals
+
+proc exchangeProposals*(simulator: NetworkSimulator): ?!seq[SignedBlock] =
+  # proposes and disseminates new blocks for all validators
+  var exchanges: seq[(int, seq[int])]
+  for proposer in simulator.validators.low..simulator.validators.high:
+    let receivers = toSeq[simulator.validators.low..simulator.validators.high]
+    exchanges.add( (proposer, receivers) )
+  simulator.exchangeProposals(exchanges)
