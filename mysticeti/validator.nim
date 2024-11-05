@@ -70,6 +70,12 @@ func updateCertified(validator: Validator, certificate: Block) =
       let stake = validator.committee.stake(certificate.author)
       proposal.certifyBy(certificate.id, stake)
 
+func addBlock(validator: Validator, signedBlock: SignedBlock) =
+  if round =? validator.rounds.latest.find(signedBlock.blck.round):
+    round.addProposal(signedBlock)
+    validator.updateSkipped(signedBlock.blck)
+    validator.updateCertified(signedBlock.blck)
+
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   type SignedBlock = blocks.SignedBlock[Validator.Signing, Validator.Hashing]
   let round = validator.rounds.latest
@@ -93,8 +99,7 @@ proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
     transactions = transactions
   )
   let signedBlock = validator.identity.sign(blck)
-  round.addProposal(signedBlock)
-  validator.updateCertified(blck)
+  validator.addBlock(signedBlock)
   success signedBlock
 
 func check*(validator: Validator, signed: SignedBlock): auto =
@@ -134,10 +139,7 @@ func check*(validator: Validator, signed: SignedBlock): auto =
   BlockCheck.correct(signed)
 
 func receive*(validator: Validator, correct: CorrectBlock) =
-  if round =? validator.rounds.latest.find(correct.blck.round):
-    round.addProposal(correct.signedBlock)
-    validator.updateSkipped(correct.blck)
-    validator.updateCertified(correct.blck)
+  validator.addBlock(correct.signedBlock)
 
 func getBlock*(validator: Validator, id: BlockId): auto =
   validator.rounds.latest.find(id)

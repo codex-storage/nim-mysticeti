@@ -1,5 +1,6 @@
 import ../basics
 import ../simulator
+import ../scenarios
 import mysticeti
 import mysticeti/blocks
 import mysticeti/hashing
@@ -269,70 +270,11 @@ suite "Multiple Validators":
     check toSeq(simulator.validators[0].committed()) == second
 
   test "commits blocks using the indirect decision rule":
-    # first round: proposals
-    let proposals = !simulator.exchangeProposals {
-      0: @[0, 1, 2, 3],
-      1: @[0, 1],
-      2: @[0, 2, 3],
-      3: @[1, 2, 3]
-    }
-    # second round: voting
-    simulator.nextRound()
-    discard !simulator.exchangeProposals {
-      0: @[0, 1, 3],
-      1: @[0, 1, 3],
-      2: @[0, 3],
-      3: @[1, 3]
-    }
-    # third round: certifying
-    simulator.nextRound()
-    discard !simulator.exchangeProposals {
-      0: @[0, 1, 2, 3],
-      1: @[0, 1, 2, 3],
-      3: @[0, 1, 2, 3]
-    }
-    # fourth round: anchor
-    simulator.nextRound()
-    discard !simulator.exchangeProposals()
-    # fifth round: voting on anchor
-    simulator.nextRound()
-    discard !simulator.exchangeProposals()
-    # sixth round: certifying anchor
-    simulator.nextRound()
-    discard !simulator.exchangeProposals()
-    check toSeq(simulator.validators[0].committed()).contains(proposals[3].blck)
+    let proposals = !scenarioFigure4(simulator)
+    let committed = toSeq(simulator.validators[0].committed())
+    check committed.contains(proposals[0][3].blck)
 
   test "skips blocks using the indirect decision rule":
-    # Modelled after Figure 3f from the Mysticeti paper
-    # first round: proposals
-    let proposals = !simulator.exchangeProposals {
-      0: @[0, 1, 2, 3],
-      1: @[0, 1],
-      2: @[0, 2, 3],
-      3: @[1, 2, 3]
-    }
-    # second round: voting
-    simulator.nextRound()
-    discard !simulator.exchangeProposals {
-      0: @[0, 1, 3],
-      1: @[0, 1, 3],
-      2: @[0, 3],
-      3: @[1, 3]
-    }
-    # third round: certifying
-    simulator.nextRound()
-    discard !simulator.exchangeProposals {
-      0: @[0, 1, 2, 3],
-      1: @[0, 1, 2, 3],
-      3: @[0, 1, 2, 3]
-    }
-    # fourth round: anchor
-    simulator.nextRound()
-    discard !simulator.exchangeProposals()
-    # fifth round: voting on anchor
-    simulator.nextRound()
-    discard !simulator.exchangeProposals()
-    # sixth round: certifying anchor
-    simulator.nextRound()
-    discard !simulator.exchangeProposals()
-    check not toSeq(simulator.validators[0].committed()).contains(proposals[1].blck)
+    let proposals = !scenarioFigure4(simulator)
+    let committed = toSeq(simulator.validators[0].committed())
+    check not committed.contains(proposals[0][1].blck)
