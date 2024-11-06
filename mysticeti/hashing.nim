@@ -1,11 +1,11 @@
 type
-  Hash*[Hashing] = object
-    value: Hashing.Hash
+  Hash*[Dependencies] = object
+    value: Dependencies.Hashing.Hash
   Hashing*[Hash] = object
 
-func hash*(T: type Hashing, bytes: openArray[byte]): auto =
+func hash*(T: type Hash, bytes: openArray[byte]): auto =
   mixin hash
-  Hash[T](value: T.Hash.hash(bytes))
+  T(value: T.Dependencies.Hashing.Hash.hash(bytes))
 
 func `$`*(hash: Hash): string =
   $hash.value

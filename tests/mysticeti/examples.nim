@@ -14,26 +14,26 @@ proc example*(T: type Identity): T =
   T.init()
 
 proc example*(T: type Identifier): T =
-  Identity[T.Signing].example.identifier
+  Identity[T.Dependencies].example.identifier
 
 proc example*(T: type CommitteeMember): T =
   CommitteeMember(int.example)
 
 proc example*(T: type Hash): T =
-  T.Hashing.hash(seq[byte].example)
+  T.hash(seq[byte].example)
 
 proc example*(T: type BlockId): T =
   let author = CommitteeMember.example
   let round = uint64.example
-  let hash = Hash[T.Hashing].example
-  BlockId.new(author, round, hash)
+  let hash = Hash[T.Dependencies].example
+  T.new(author, round, hash)
 
 proc example*(
   T: type Block,
   author = CommitteeMember.example,
   round = uint64.example
 ): T =
-  let parents = seq[BlockId[T.Hashing]].example
+  let parents = seq[BlockId[T.Dependencies]].example
   let transactions = seq[Transaction].example
   T.new(author, round, parents, transactions)
 
@@ -42,8 +42,8 @@ proc example*(
   author = CommitteeMember.example,
   round = uint64.example
 ): T =
-  let identity = Identity[T.Signing].example
-  let blck = Block[T.Hashing].example(author = author, round = round)
+  let identity = Identity[T.Dependencies].example
+  let blck = Block[T.Dependencies].example(author = author, round = round)
   identity.sign(blck)
 
 proc example*[T](_: type seq[T], length=0..10): seq[T] =

@@ -1,3 +1,4 @@
+import ../basics
 import ../blocks
 
 type
@@ -5,15 +6,15 @@ type
     invalid
     incomplete
     correct
-  BlockCheck*[Signing, Hashing] = object
+  BlockCheck*[Dependencies] = object
     case verdict: BlockVerdict
     of invalid:
       reason: string
     of incomplete:
-      missing: seq[BlockId[Hashing]]
+      missing: seq[BlockId[Dependencies]]
     of correct:
-      blck: CorrectBlock[Signing, Hashing]
-  CorrectBlock*[Signing, Hashing] = distinct SignedBlock[Signing, Hashing]
+      blck: CorrectBlock[Dependencies]
+  CorrectBlock*[Dependencies] = distinct SignedBlock[Dependencies]
 
 func invalid*(T: type BlockCheck, reason: string): T =
   T(verdict: BlockVerdict.invalid, reason: reason)
@@ -22,7 +23,7 @@ func incomplete*(T: type BlockCheck; missing: seq[BlockId]): T =
   T(verdict: BlockVerdict.incomplete, missing: missing)
 
 func correct*(T: type BlockCheck, signedBlock: SignedBlock): T =
-  let blck = CorrectBlock[SignedBlock.Signing, SignedBlock.Hashing](signedBlock)
+  let blck = CorrectBlock[SignedBlock.Dependencies](signedBlock)
   T(verdict: BlockVerdict.correct, blck: blck)
 
 func verdict*(check: BlockCheck): BlockVerdict =
@@ -38,7 +39,7 @@ func blck*(check: BlockCheck): auto =
   check.blck
 
 func signedBlock*(correct: CorrectBlock): auto =
-  SignedBlock[CorrectBlock.Signing, CorrectBlock.Hashing](correct)
+  SignedBlock[CorrectBlock.Dependencies](correct)
 
 func blck*(correct: CorrectBlock): auto =
   correct.signedBlock.blck

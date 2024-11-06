@@ -5,9 +5,10 @@ import mysticeti/hashing
 
 suite "Blocks":
 
-  type Block = mysticeti.Block[MockHashing]
-  type BlockId = mysticeti.BlockId[MockHashing]
-  type Identity = mysticeti.Identity[MockSigning]
+  type Block = mysticeti.Block[MockDependencies]
+  type BlockId = mysticeti.BlockId[MockDependencies]
+  type Identity = mysticeti.Identity[MockDependencies]
+  type Hash = hashing.Hash[MockDependencies]
 
   test "blocks have an author, a round, parents and transactions":
     let author = CommitteeMember.example
@@ -25,7 +26,7 @@ suite "Blocks":
     let id = blck.id
     check id.author == blck.author
     check id.round == blck.round
-    check id.hash == Block.Hashing.hash(blck.toBytes)
+    check id.hash == Hash.hash(blck.toBytes)
 
   test "blocks can be signed":
     let signer = Identity.init

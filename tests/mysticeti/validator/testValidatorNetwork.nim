@@ -7,11 +7,12 @@ import mysticeti/hashing
 
 suite "Validator Network":
 
-  type Validator = mysticeti.Validator[MockSigning, MockHashing]
-  type Identity = mysticeti.Identity[MockSigning]
-  type Block = blocks.Block[MockHashing]
-  type BlockId = blocks.BlockId[MockHashing]
-  type Hash = hashing.Hash[MockHashing]
+  type Validator = mysticeti.Validator[MockDependencies]
+  type Committee = mysticeti.Committee[MockDependencies]
+  type Identity = mysticeti.Identity[MockDependencies]
+  type Block = blocks.Block[MockDependencies]
+  type BlockId = blocks.BlockId[MockDependencies]
+  type Hash = hashing.Hash[MockDependencies]
 
   var simulator: NetworkSimulator
 

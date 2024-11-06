@@ -2,9 +2,10 @@ import ./basics
 import mysticeti
 import mysticeti/blocks
 
-type Validator* = mysticeti.Validator[MockSigning, MockHashing]
-type Identity* = mysticeti.Identity[MockSigning]
-type SignedBlock* = blocks.SignedBlock[MockSigning, MockHashing]
+type Validator* = mysticeti.Validator[MockDependencies]
+type Committee* = mysticeti.Committee[MockDependencies]
+type Identity* = mysticeti.Identity[MockDependencies]
+type SignedBlock* = blocks.SignedBlock[MockDependencies]
 
 type NetworkSimulator* = object
   identities: seq[Identity]

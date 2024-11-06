@@ -3,14 +3,14 @@ import ../blocks
 import ../committee
 import ./slots
 
-type Round*[Signing, Hashing] = ref object
+type Round*[Dependencies] = ref object
   number: uint64
-  previous, next: ?Round[Signing, Hashing]
-  slots: seq[ProposerSlot[Signing, Hashing]]
+  previous, next: ?Round[Dependencies]
+  slots: seq[ProposerSlot[Dependencies]]
 
 func new*(T: type Round, number: uint64, slots: int): T =
   assert slots > 0
-  type Slot = ProposerSlot[T.Signing, T.Hashing]
+  type Slot = ProposerSlot[T.Dependencies]
   let slots = newSeqWith(slots, Slot.new())
   T(number: number, slots: slots)
 

@@ -1,3 +1,7 @@
+import ./mysticeti/dependencies
+
+export dependencies.Dependencies
+
 import ./mysticeti/validator
 
 export validator.Validator

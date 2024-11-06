@@ -6,9 +6,9 @@ import mysticeti/validator/round
 
 suite "Validator Round":
 
-  type Round = round.Round[MockSigning, MockHashing]
-  type Block = mysticeti.Block[MockHashing]
-  type SignedBlock = mysticeti.SignedBlock[MockSigning, MockHashing]
+  type Round = round.Round[MockDependencies]
+  type Block = mysticeti.Block[MockDependencies]
+  type SignedBlock = mysticeti.SignedBlock[MockDependencies]
 
   test "rounds have a number":
     check Round.new(0, 1).number == 0

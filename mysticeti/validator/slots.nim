@@ -3,15 +3,15 @@ import ../blocks
 import ../committee
 
 type
-  ProposerSlot*[Signing, Hashing] = ref object
-    proposals: seq[Proposal[Signing, Hashing]]
+  ProposerSlot*[Dependencies] = ref object
+    proposals: seq[Proposal[Dependencies]]
     skippedBy: Voting
     status: SlotStatus
-  Proposal*[Signing, Hashing] = ref object
-    slot: ProposerSlot[Signing, Hashing]
-    signedBlock: SignedBlock[Signing, Hashing]
+  Proposal*[Dependencies] = ref object
+    slot: ProposerSlot[Dependencies]
+    signedBlock: SignedBlock[Dependencies]
     certifiedBy: Voting
-    certificates: seq[BlockId[Hashing]]
+    certificates: seq[BlockId[Dependencies]]
   SlotStatus* {.pure.} = enum
     undecided
     skip
@@ -40,7 +40,7 @@ func certificates*(proposal: Proposal): auto =
   proposal.certificates
 
 func addProposal*(slot: ProposerSlot, signedBlock: SignedBlock) =
-  let proposal = Proposal[SignedBlock.Signing, SignedBlock.Hashing](
+  let proposal = Proposal[ProposerSlot.Dependencies](
     slot: slot,
     signedBlock: signedBlock
   )

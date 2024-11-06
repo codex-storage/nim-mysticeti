@@ -4,10 +4,10 @@ import mysticeti/validator/slots
 
 suite "Proposer Slots":
 
-  type BlockId = mysticeti.BlockId[MockHashing]
-  type SignedBlock = mysticeti.SignedBlock[MockSigning, MockHashing]
-  type Proposal = slots.Proposal[MockSigning, MockHashing]
-  type ProposerSlot = slots.ProposerSlot[MockSigning, MockHashing]
+  type BlockId = mysticeti.BlockId[MockDependencies]
+  type SignedBlock = mysticeti.SignedBlock[MockDependencies]
+  type Proposal = slots.Proposal[MockDependencies]
+  type ProposerSlot = slots.ProposerSlot[MockDependencies]
 
   var slot: ProposerSlot
 

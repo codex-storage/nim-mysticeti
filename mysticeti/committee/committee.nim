@@ -3,13 +3,13 @@ import ../signing
 import ./members
 
 type
-  Committee*[Signing] = ref object
-    members: seq[Identifier[Signing]]
+  Committee*[Dependencies] = ref object
+    members: seq[Identifier[Dependencies]]
     stakes: seq[Stake]
   Stake* = float64
 
-func new*(_: type Committee, stakes: openArray[(Identifier, Stake)]): auto =
-  var committee = Committee[Identifier.Signing]()
+func new*(T: type Committee, stakes: openArray[(Identifier, Stake)]): auto =
+  var committee = T()
   for (member, stake) in stakes:
     committee.members.add(member)
     committee.stakes.add(stake)

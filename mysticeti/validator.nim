@@ -9,11 +9,11 @@ import ./validator/checks
 export slots
 export checks
 
-type Validator*[Signing, Hashing] = ref object
-  identity: Identity[Signing]
-  committee: Committee[Signing]
+type Validator*[Dependencies] = ref object
+  identity: Identity[Dependencies]
+  committee: Committee[Dependencies]
   membership: CommitteeMember
-  rounds: Rounds[Signing, Hashing]
+  rounds: Rounds[Dependencies]
 
 func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
   without membership =? committee.membership(identity.identifier):
@@ -22,7 +22,7 @@ func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
     identity: identity,
     committee: committee,
     membership: membership,
-    rounds: Rounds[T.Signing, T.Hashing].init(committee.size)
+    rounds: Rounds[T.Dependencies].init(committee.size)
   )
 
 func identifier*(validator: Validator): auto =
@@ -77,11 +77,12 @@ func addBlock(validator: Validator, signedBlock: SignedBlock) =
     validator.updateCertified(signedBlock.blck)
 
 proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
-  type SignedBlock = blocks.SignedBlock[Validator.Signing, Validator.Hashing]
+  type Block = blocks.Block[Validator.Dependencies]
+  type SignedBlock = blocks.SignedBlock[Validator.Dependencies]
   let round = validator.rounds.latest
   if round[validator.membership].proposals.len > 0:
     return SignedBlock.failure "already proposed this round"
-  var parents: seq[BlockId[Validator.Hashing]]
+  var parents: seq[BlockId[Validator.Dependencies]]
   var parentStake: Stake
   if previous =? round.previous:
     for slot in previous.slots:
@@ -103,8 +104,8 @@ proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
   success signedBlock
 
 func check*(validator: Validator, signed: SignedBlock): auto =
-  type BlockCheck = checks.BlockCheck[SignedBlock.Signing, SignedBlock.Hashing]
-  type BlockId = blocks.BlockId[SignedBlock.Hashing]
+  type BlockCheck = checks.BlockCheck[SignedBlock.Dependencies]
+  type BlockId = blocks.BlockId[SignedBlock.Dependencies]
   without member =? validator.committee.membership(signed.signer):
     return BlockCheck.invalid("block is not signed by a committee member")
   if member != signed.blck.author:

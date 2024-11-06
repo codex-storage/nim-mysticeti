@@ -4,20 +4,20 @@ import ./blockid
 import ./transaction
 
 type
-  Block*[Hashing] = object
+  Block*[Dependencies] = object
     author: CommitteeMember
     round: uint64
-    parents: seq[BlockId[Hashing]]
+    parents: seq[BlockId[Dependencies]]
     transactions: seq[Transaction]
 
-func new*[Hashing](
-  _: type Block[Hashing];
+func new*[Dependencies](
+  _: type Block[Dependencies];
   author: CommitteeMember,
   round: uint64,
-  parents: seq[BlockId[Hashing]],
+  parents: seq[BlockId[Dependencies]],
   transactions: seq[Transaction]
 ): auto =
-  Block[Hashing](
+  Block[Dependencies](
     author: author,
     round: round,
     parents: parents,
@@ -40,8 +40,8 @@ func toBytes*(blck: Block): seq[byte] =
   cast[seq[byte]]($blck) # TODO: proper serialization
 
 func id*(blck: Block): auto =
-  BlockId.new(
+  BlockId[Block.Dependencies].new(
     blck.author,
     blck.round,
-    Block.Hashing.hash(blck.toBytes)
+    Hash[Block.Dependencies].hash(blck.toBytes)
   )

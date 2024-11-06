@@ -1,18 +1,18 @@
 import ../committee
 import ../hashing
 
-type BlockId*[Hashing] = object
+type BlockId*[Dependencies] = object
   author: CommitteeMember
   round: uint64
-  hash: Hash[Hashing]
+  hash: Hash[Dependencies]
 
 func new*(
-  _: type BlockId,
+  T: type BlockId,
   author: CommitteeMember,
   round: uint64,
   hash: Hash
 ): auto =
-  BlockId[Hash.Hashing](
+  T(
     author: author,
     round: round,
     hash: hash

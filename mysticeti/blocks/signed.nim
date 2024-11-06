@@ -1,12 +1,13 @@
+import ../basics
 import ../signing
 import ./blck
 
-type SignedBlock*[Signing, Hashing] = object
-  blck: Block[Hashing]
-  signature: Signature[Signing]
+type SignedBlock*[Dependencies] = object
+  blck: Block[Dependencies]
+  signature: Signature[Dependencies]
 
 func new*(_: type SignedBlock, blck: Block, signature: Signature): auto =
-  SignedBlock[Signature.Signing, Block.Hashing](blck: blck, signature: signature)
+  SignedBlock[Block.Dependencies](blck: blck, signature: signature)
 
 func blck*(signed: SignedBlock): auto =
   signed.blck

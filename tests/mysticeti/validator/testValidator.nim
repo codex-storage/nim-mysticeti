@@ -1,8 +1,9 @@
 import ../basics
 import mysticeti
 
-type Validator = mysticeti.Validator[MockSigning, MockHashing]
-type Identity = mysticeti.Identity[MockSigning]
+type Validator = mysticeti.Validator[MockDependencies]
+type Identity = mysticeti.Identity[MockDependencies]
+type Committee = mysticeti.Committee[MockDependencies]
 
 suite "Validator":
 

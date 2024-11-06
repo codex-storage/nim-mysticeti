@@ -3,8 +3,8 @@ import mysticeti/validator/rounds
 
 suite "List of Validator Rounds":
 
-  type Rounds = rounds.Rounds[MockSigning, MockHashing]
-  type Round = rounds.Round[MockSigning, MockHashing]
+  type Rounds = rounds.Rounds[MockDependencies]
+  type Round = rounds.Round[MockDependencies]
 
   test "has a single round initially":
     let rounds = Rounds.init(slots = 4)
