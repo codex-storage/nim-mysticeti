@@ -270,11 +270,23 @@ suite "Validator Network":
     check toSeq(simulator.validators[0].committed()) == second
 
   test "commits blocks using the indirect decision rule":
-    let proposals = !scenarioFigure4(simulator)
+    let proposals = !simulator.scenarioFigure4()
     let committed = toSeq(simulator.validators[0].committed())
     check committed.contains(proposals[0][3].blck)
 
   test "skips blocks using the indirect decision rule":
-    let proposals = !scenarioFigure4(simulator)
+    let proposals = !simulator.scenarioFigure4()
     let committed = toSeq(simulator.validators[0].committed())
     check not committed.contains(proposals[0][1].blck)
+
+  test "all validators emit blocks in the same sequence":
+    let proposals = !simulator.scenarioFigure4()
+    # commit sequence from appendix A of the Mysticeti paper:
+    let expected = @[
+        proposals[0][0].blck,
+        proposals[0][2].blck,
+        proposals[0][3].blck,
+        proposals[1][1].blck
+      ]
+    for validator in simulator.validators:
+      check toSeq(validator.committed()) == expected
