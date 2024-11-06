@@ -1,21 +1,20 @@
 import ../basics
 import ../committee
 import ./blockid
-import ./transaction
 
 type
   Block*[Dependencies] = object
     author: CommitteeMember
     round: uint64
     parents: seq[BlockId[Dependencies]]
-    transactions: seq[Transaction]
+    transactions: seq[Transaction[Dependencies]]
 
 func new*[Dependencies](
   _: type Block[Dependencies];
   author: CommitteeMember,
   round: uint64,
   parents: seq[BlockId[Dependencies]],
-  transactions: seq[Transaction]
+  transactions: seq[Transaction[Dependencies]]
 ): auto =
   Block[Dependencies](
     author: author,

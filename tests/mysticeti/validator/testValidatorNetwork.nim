@@ -10,6 +10,7 @@ suite "Validator Network":
   type Validator = mysticeti.Validator[MockDependencies]
   type Committee = mysticeti.Committee[MockDependencies]
   type Identity = mysticeti.Identity[MockDependencies]
+  type Transaction = mysticeti.Transaction[MockDependencies]
   type Block = blocks.Block[MockDependencies]
   type BlockId = blocks.BlockId[MockDependencies]
   type Hash = hashing.Hash[MockDependencies]

@@ -8,6 +8,7 @@ suite "Blocks":
   type Block = mysticeti.Block[MockDependencies]
   type BlockId = mysticeti.BlockId[MockDependencies]
   type Identity = mysticeti.Identity[MockDependencies]
+  type Transaction = mysticeti.Transaction[MockDependencies]
   type Hash = hashing.Hash[MockDependencies]
 
   test "blocks have an author, a round, parents and transactions":

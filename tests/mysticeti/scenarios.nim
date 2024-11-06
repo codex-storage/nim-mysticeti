@@ -1,5 +1,8 @@
+import mysticeti
 import ./basics
 import ./simulator
+
+type SignedBlock = mysticeti.SignedBlock[MockDependencies]
 
 proc scenarioFigure4*(simulator: NetworkSimulator): ?!seq[seq[SignedBlock]] =
   # replays scenario from figure 4 in the Mysticeti paper

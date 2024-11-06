@@ -4,6 +4,7 @@ import mysticeti
 type Validator = mysticeti.Validator[MockDependencies]
 type Identity = mysticeti.Identity[MockDependencies]
 type Committee = mysticeti.Committee[MockDependencies]
+type Transaction = mysticeti.Transaction[MockDependencies]
 
 suite "Validator":
 

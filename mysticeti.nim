@@ -35,16 +35,18 @@ export committee.`$`
 
 import ./mysticeti/blocks
 
-export blocks.Transaction
 export blocks.Block
 export blocks.BlockId
 export blocks.author
 export blocks.round
 export blocks.parents
 export blocks.id
-export blocks.SignedBlock
-export blocks.blck
-export blocks.signer
+
+import ./mysticeti/blocks/signed
+
+export signed.SignedBlock
+export signed.blck
+export signed.signer
 
 import ./mysticeti/dependencies/signing
 
@@ -57,3 +59,8 @@ export signing.`$`
 import ./mysticeti/dependencies/hashing
 
 export hashing.`$`
+
+import ./mysticeti/dependencies/transacting
+
+export transacting.Transaction
+export transacting.`$`
