@@ -1,7 +1,7 @@
 import ../basics
 import mysticeti
 import mysticeti/committee
-import mysticeti/signing
+import mysticeti/dependencies/signing
 
 suite "Committee":
 

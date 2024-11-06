@@ -1,5 +1,5 @@
+import ../basics
 import ../committee
-import ../hashing
 
 type BlockId*[Dependencies] = object
   author: CommitteeMember

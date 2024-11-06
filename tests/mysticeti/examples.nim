@@ -2,7 +2,7 @@ import std/random
 import std/sequtils
 import mysticeti
 import mysticeti/blocks
-import mysticeti/hashing
+import mysticeti/dependencies
 
 proc example*(T: type SomeInteger): T =
   rand(T)

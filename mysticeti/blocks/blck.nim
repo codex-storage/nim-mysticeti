@@ -1,5 +1,5 @@
+import ../basics
 import ../committee
-import ../hashing
 import ./blockid
 import ./transaction
 

@@ -1,5 +1,4 @@
 import ../basics
-import ../signing
 import ./blck
 
 type SignedBlock*[Dependencies] = object

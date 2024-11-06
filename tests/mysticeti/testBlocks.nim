@@ -1,7 +1,7 @@
 import ./basics
 import mysticeti
 import mysticeti/blocks
-import mysticeti/hashing
+import mysticeti/dependencies/hashing
 
 suite "Blocks":
 

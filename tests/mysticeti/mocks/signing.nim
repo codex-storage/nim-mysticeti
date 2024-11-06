@@ -1,7 +1,7 @@
 import std/random
 import std/sequtils
 import std/strutils
-import mysticeti/signing
+import mysticeti/dependencies/signing
 
 type
   Identity = object

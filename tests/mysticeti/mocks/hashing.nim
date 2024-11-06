@@ -1,5 +1,5 @@
 import std/hashes
-import mysticeti/hashing
+import mysticeti/dependencies/hashing
 
 type
   MockHash = distinct hashes.Hash

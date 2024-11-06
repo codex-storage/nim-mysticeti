@@ -46,7 +46,7 @@ export blocks.SignedBlock
 export blocks.blck
 export blocks.signer
 
-import ./mysticeti/signing
+import ./mysticeti/dependencies/signing
 
 export signing.Identity
 export signing.Identifier
@@ -54,6 +54,6 @@ export signing.init
 export signing.identifier
 export signing.`$`
 
-import ./mysticeti/hashing
+import ./mysticeti/dependencies/hashing
 
 export hashing.`$`

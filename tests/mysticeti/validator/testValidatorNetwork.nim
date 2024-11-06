@@ -3,7 +3,7 @@ import ../simulator
 import ../scenarios
 import mysticeti
 import mysticeti/blocks
-import mysticeti/hashing
+import mysticeti/dependencies/hashing
 
 suite "Validator Network":
 

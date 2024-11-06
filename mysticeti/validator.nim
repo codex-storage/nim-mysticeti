@@ -1,5 +1,4 @@
 import ./basics
-import ./signing
 import ./committee
 import ./blocks
 import ./validator/slots
