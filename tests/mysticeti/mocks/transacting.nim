@@ -1,8 +1,10 @@
+import std/random
 import mysticeti/dependencies/transacting
 
 type
   MockTransaction = object
+    nonce: int
   MockTransacting* = Transacting[MockTransaction]
 
 proc example*(_: type MockTransaction): MockTransaction =
-  discard
+  MockTransaction(nonce: rand(int))

@@ -306,7 +306,7 @@ suite "Validator Network":
       author = CommitteeMember(0),
       round = 0,
       parents = @[],
-      transactions = seq[Transaction].example
+      transactions = seq[Transaction].example(length = 1..10)
     ))
     # validator 0 sends different proposals to different parts of the network
     !exchangeBlock(simulator.validators[0], simulator.validators[0], proposalA)
