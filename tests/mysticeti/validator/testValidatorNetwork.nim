@@ -9,6 +9,7 @@ suite "Validator Network":
 
   type Validator = mysticeti.Validator[MockSigning, MockHashing]
   type Identity = mysticeti.Identity[MockSigning]
+  type Block = blocks.Block[MockHashing]
   type BlockId = blocks.BlockId[MockHashing]
   type Hash = hashing.Hash[MockHashing]
 
@@ -290,3 +291,33 @@ suite "Validator Network":
       ]
     for validator in simulator.validators:
       check toSeq(validator.committed()) == expected
+
+  test "validators handle equivocation":
+    # three out of four validators exchange proposals normally
+    discard !simulator.exchangeProposals({
+      1: @[0, 1, 2, 3],
+      2: @[0, 1, 2, 3],
+      3: @[0, 1, 2, 3]
+    })
+    # validator 0 creates two different proposals
+    let proposalA, proposalB = simulator.identities[0].sign(Block.new(
+      author = CommitteeMember(0),
+      round = 0,
+      parents = @[],
+      transactions = seq[Transaction].example
+    ))
+    # validator 0 sends different proposals to different parts of the network
+    !exchangeBlock(simulator.validators[0], simulator.validators[0], proposalA)
+    !exchangeBlock(simulator.validators[0], simulator.validators[1], proposalA)
+    !exchangeBlock(simulator.validators[0], simulator.validators[2], proposalA)
+    !exchangeBlock(simulator.validators[0], simulator.validators[3], proposalB)
+    # next rounds happen normally
+    simulator.nextRound()
+    discard !simulator.exchangeProposals()
+    simulator.nextRound()
+    discard !simulator.exchangeProposals()
+    # check that only the proposal that was sent to the majority is committed
+    for validator in simulator.validators:
+      let sequence = toSeq(validator.committed())
+      check proposalA.blck in sequence
+      check proposalB.blck notin sequence
