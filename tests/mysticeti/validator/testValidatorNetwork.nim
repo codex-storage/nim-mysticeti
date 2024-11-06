@@ -5,7 +5,7 @@ import mysticeti
 import mysticeti/blocks
 import mysticeti/hashing
 
-suite "Multiple Validators":
+suite "Validator Network":
 
   type Validator = mysticeti.Validator[MockSigning, MockHashing]
   type Identity = mysticeti.Identity[MockSigning]

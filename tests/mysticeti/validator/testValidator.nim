@@ -4,7 +4,7 @@ import mysticeti
 type Validator = mysticeti.Validator[MockSigning, MockHashing]
 type Identity = mysticeti.Identity[MockSigning]
 
-suite "Single Validator":
+suite "Validator":
 
   var validator: Validator
 

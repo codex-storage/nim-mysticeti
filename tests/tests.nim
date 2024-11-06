@@ -4,7 +4,7 @@ import ./mysticeti/committee/testVoting
 import ./mysticeti/validator/testSlots
 import ./mysticeti/validator/testRound
 import ./mysticeti/validator/testRounds
-import ./mysticeti/validator/testSingle
-import ./mysticeti/validator/testMultiple
+import ./mysticeti/validator/testValidator
+import ./mysticeti/validator/testValidatorNetwork
 
 {.warning[UnusedImport]:off.}
