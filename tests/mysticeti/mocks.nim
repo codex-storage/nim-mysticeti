@@ -5,4 +5,4 @@ import ./mocks/hashing
 export signing
 export hashing
 
-type MockDependencies* = Dependencies[MockSigning, MockHashing]
+type MockDependencies* = Dependencies[MockHashing, MockSigning]

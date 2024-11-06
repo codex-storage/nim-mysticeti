@@ -1,7 +1,7 @@
-import ./dependencies/signing
 import ./dependencies/hashing
+import ./dependencies/signing
 
-export signing
 export hashing
+export signing
 
-type Dependencies*[Signing, Hashing] = object
+type Dependencies*[Hashing, Signing] = object
