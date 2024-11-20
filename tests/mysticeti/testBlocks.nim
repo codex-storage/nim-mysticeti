@@ -10,6 +10,7 @@ suite "Blocks":
   type Identity = mysticeti.Identity[MockDependencies]
   type Transaction = mysticeti.Transaction[MockDependencies]
   type Hash = hashing.Hash[MockDependencies]
+  type Serialization = MockDependencies.Serialization
 
   test "blocks have an author, a round, parents and transactions":
     let author = CommitteeMember.example
@@ -27,7 +28,7 @@ suite "Blocks":
     let id = blck.id
     check id.author == blck.author
     check id.round == blck.round
-    check id.hash == Hash.hash(blck.toBytes)
+    check id.hash == Hash.hash(Serialization.toBytes(blck))
 
   test "blocks can be signed":
     let signer = Identity.init

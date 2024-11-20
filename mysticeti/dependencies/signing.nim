@@ -1,3 +1,5 @@
+import ./hashing
+
 type
   Identity*[Dependencies] = object
     value: Dependencies.Signing.Identity
@@ -15,13 +17,13 @@ func identifier*(identity: Identity): auto =
   mixin identifier
   Identifier[Identity.Dependencies](value: identity.value.identifier)
 
-func sign*(identity: Identity, bytes: openArray[byte]): auto =
+func sign*(identity: Identity, hash: Hash): auto =
   mixin sign
-  Signature[Identity.Dependencies](value: identity.value.sign(bytes))
+  Signature[Identity.Dependencies](value: identity.value.sign(hash))
 
-func signer*(signature: Signature, bytes: openArray[byte]): auto =
+func signer*(signature: Signature, hash: Hash): auto =
   mixin signer
-  Identifier[Signature.Dependencies](value: signature.value.signer(bytes))
+  Identifier[Signature.Dependencies](value: signature.value.signer(hash))
 
 func `$`*(identity: Identity): string =
   $identity.value

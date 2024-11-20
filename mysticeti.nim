@@ -63,4 +63,3 @@ export hashing.`$`
 import ./mysticeti/dependencies/transacting
 
 export transacting.Transaction
-export transacting.`$`

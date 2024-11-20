@@ -4,10 +4,17 @@ import ./blockid
 
 type
   Block*[Dependencies] = object
+    id: BlockId[Dependencies]
     author: CommitteeMember
     round: uint64
     parents: seq[BlockId[Dependencies]]
     transactions: seq[Transaction[Dependencies]]
+
+func calculateId(blck: var Block) =
+  type Dependencies = Block.Dependencies
+  let bytes = Dependencies.Serialization.toBytes(blck)
+  let hash = Hash[Dependencies].hash(bytes)
+  blck.id = BlockId[Dependencies].new(blck.author, blck.round, hash)
 
 func new*[Dependencies](
   _: type Block[Dependencies];
@@ -16,12 +23,14 @@ func new*[Dependencies](
   parents: seq[BlockId[Dependencies]],
   transactions: seq[Transaction[Dependencies]]
 ): auto =
-  Block[Dependencies](
+  var blck = Block[Dependencies](
     author: author,
     round: round,
     parents: parents,
     transactions: transactions
   )
+  blck.calculateId()
+  blck
 
 func author*(blck: Block): auto =
   blck.author
@@ -35,12 +44,5 @@ func parents*(blck: Block): auto =
 func transactions*(blck: Block): auto =
   blck.transactions
 
-func toBytes*(blck: Block): seq[byte] =
-  cast[seq[byte]]($blck) # TODO: proper serialization
-
 func id*(blck: Block): auto =
-  BlockId[Block.Dependencies].new(
-    blck.author,
-    blck.round,
-    Hash[Block.Dependencies].hash(blck.toBytes)
-  )
+  blck.id

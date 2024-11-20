@@ -9,5 +9,6 @@ export transacting
 type Dependencies*[
   Hashing,
   Signing,
-  Transacting
+  Transacting,
+  Serialization
 ] = object
