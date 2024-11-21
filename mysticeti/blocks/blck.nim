@@ -11,10 +11,11 @@ type
     transactions: seq[Dependencies.Transaction]
 
 func calculateId(blck: var Block) =
+  mixin hash
   type Dependencies = Block.Dependencies
-  let bytes = Dependencies.Serialization.toBytes(blck)
-  let hash = Hash[Dependencies].hash(bytes)
-  blck.id = BlockId[Dependencies].new(blck.author, blck.round, hash)
+  let blockBytes = Dependencies.Serialization.toBytes(blck)
+  let blockHash = Dependencies.Hash.hash(blockBytes)
+  blck.id = BlockId[Dependencies].new(blck.author, blck.round, blockHash)
 
 func new*[Dependencies](
   _: type Block[Dependencies];

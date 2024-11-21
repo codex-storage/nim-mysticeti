@@ -2,7 +2,7 @@ import std/random
 import std/sequtils
 import std/strutils
 import mysticeti/dependencies/signing
-import mysticeti/dependencies/hashing
+import ./hashing
 
 type
   Identity = object
@@ -19,8 +19,8 @@ proc init*(_: type Identity): Identity =
 func identifier*(identity: Identity): Identifier =
   Identifier(id: identity.id)
 
-func sign*(identity: Identity, hash: Hash): Signature =
+func sign*(identity: Identity; hash: MockHash): Signature =
   Signature(signer: identity.id)
 
-func signer*(signature: Signature, hash: Hash): Identifier =
+func signer*(signature: Signature, hash: MockHash): Identifier =
   Identifier(id: signature.signer)

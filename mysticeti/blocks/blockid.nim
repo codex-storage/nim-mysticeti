@@ -1,16 +1,15 @@
-import ../basics
 import ../committee
 
 type BlockId*[Dependencies] = object
   author: CommitteeMember
   round: uint64
-  hash: Hash[Dependencies]
+  hash: Dependencies.Hash
 
-func new*(
-  T: type BlockId,
+func new*[T: BlockId](
+  _: type T,
   author: CommitteeMember,
   round: uint64,
-  hash: Hash
+  hash: T.Dependencies.Hash
 ): auto =
   T(
     author: author,

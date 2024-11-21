@@ -55,7 +55,3 @@ export signing.Identifier
 export signing.init
 export signing.identifier
 export signing.`$`
-
-import ./mysticeti/dependencies/hashing
-
-export hashing.`$`

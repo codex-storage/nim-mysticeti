@@ -16,13 +16,10 @@ proc example*(T: type Identifier): T =
 proc example*(T: type CommitteeMember): T =
   CommitteeMember(int.example)
 
-proc example*(T: type Hash): T =
-  T.hash(seq[byte].example)
-
 proc example*(T: type BlockId): T =
   let author = CommitteeMember.example
   let round = uint64.example
-  let hash = Hash[T.Dependencies].example
+  let hash = T.Dependencies.Hash.example
   T.new(author, round, hash)
 
 proc example*(

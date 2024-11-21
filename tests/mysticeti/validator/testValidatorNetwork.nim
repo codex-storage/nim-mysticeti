@@ -3,7 +3,6 @@ import ../simulator
 import ../scenarios
 import mysticeti
 import mysticeti/blocks
-import mysticeti/dependencies/hashing
 
 suite "Validator Network":
 
@@ -13,7 +12,7 @@ suite "Validator Network":
   type Transaction = MockDependencies.Transaction
   type Block = blocks.Block[MockDependencies]
   type BlockId = blocks.BlockId[MockDependencies]
-  type Hash = hashing.Hash[MockDependencies]
+  type Hash = MockDependencies.Hash
 
   var simulator: NetworkSimulator
 

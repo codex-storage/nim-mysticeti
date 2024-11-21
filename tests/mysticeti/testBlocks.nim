@@ -1,7 +1,6 @@
 import ./basics
 import mysticeti
 import mysticeti/blocks
-import mysticeti/dependencies/hashing
 
 suite "Blocks":
 
@@ -9,7 +8,7 @@ suite "Blocks":
   type BlockId = mysticeti.BlockId[MockDependencies]
   type Identity = mysticeti.Identity[MockDependencies]
   type Transaction = MockDependencies.Transaction
-  type Hash = hashing.Hash[MockDependencies]
+  type Hash = MockDependencies.Hash
   type Serialization = MockDependencies.Serialization
 
   test "blocks have an author, a round, parents and transactions":
