@@ -59,7 +59,3 @@ export signing.`$`
 import ./mysticeti/dependencies/hashing
 
 export hashing.`$`
-
-import ./mysticeti/dependencies/transacting
-
-export transacting.Transaction

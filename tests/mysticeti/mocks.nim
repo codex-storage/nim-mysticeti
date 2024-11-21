@@ -1,17 +1,17 @@
 import mysticeti/dependencies
 import ./mocks/signing
 import ./mocks/hashing
-import ./mocks/transacting
+import ./mocks/transaction
 import ./mocks/serialization
 
 export signing
 export hashing
-export transacting
+export transaction
 export serialization
 
 type MockDependencies* = Dependencies[
   MockHashing,
   MockSigning,
-  MockTransacting,
+  MockTransaction,
   MockSerialization
 ]

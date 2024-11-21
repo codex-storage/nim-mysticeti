@@ -8,7 +8,7 @@ suite "Blocks":
   type Block = mysticeti.Block[MockDependencies]
   type BlockId = mysticeti.BlockId[MockDependencies]
   type Identity = mysticeti.Identity[MockDependencies]
-  type Transaction = mysticeti.Transaction[MockDependencies]
+  type Transaction = MockDependencies.Transaction
   type Hash = hashing.Hash[MockDependencies]
   type Serialization = MockDependencies.Serialization
 

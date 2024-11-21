@@ -7,9 +7,6 @@ import mysticeti/dependencies
 proc example*(T: type SomeInteger): T =
   rand(T)
 
-proc example*(T: type Transaction): T =
-  T.init(T.Dependencies.Transacting.Transaction.example)
-
 proc example*(T: type Identity): T =
   T.init()
 
@@ -33,8 +30,9 @@ proc example*(
   author = CommitteeMember.example,
   round = uint64.example
 ): T =
+  type Transaction = T.Dependencies.Transaction
   let parents = seq[BlockId[T.Dependencies]].example
-  let transactions = seq[Transaction[T.Dependencies]].example
+  let transactions = seq[Transaction].example
   T.new(author, round, parents, transactions)
 
 proc example*(

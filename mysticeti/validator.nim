@@ -75,7 +75,7 @@ func addBlock(validator: Validator, signedBlock: SignedBlock) =
     validator.updateSkipped(signedBlock.blck)
     validator.updateCertified(signedBlock.blck)
 
-proc propose*(validator: Validator, transactions: seq[Transaction]): auto =
+proc propose*[Transaction](validator: Validator, transactions: seq[Transaction]): auto =
   type Block = blocks.Block[Validator.Dependencies]
   type SignedBlock = blocks.SignedBlock[Validator.Dependencies]
   let round = validator.rounds.latest

@@ -1,6 +1,6 @@
 import std/json
 import mysticeti
-import ./transacting
+import ./transaction
 
 type MockSerialization* = object
 
@@ -14,7 +14,7 @@ proc `%`*(id: BlockId): JsonNode =
     "hash": $id.hash
   }
 
-proc `%`*(transaction: MockTransacting.Transaction): JsonNode =
+proc `%`*(transaction: MockTransaction): JsonNode =
   %*{
     "nonce": transaction.nonce
   }

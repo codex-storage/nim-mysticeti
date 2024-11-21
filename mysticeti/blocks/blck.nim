@@ -8,7 +8,7 @@ type
     author: CommitteeMember
     round: uint64
     parents: seq[BlockId[Dependencies]]
-    transactions: seq[Transaction[Dependencies]]
+    transactions: seq[Dependencies.Transaction]
 
 func calculateId(blck: var Block) =
   type Dependencies = Block.Dependencies
@@ -21,7 +21,7 @@ func new*[Dependencies](
   author: CommitteeMember,
   round: uint64,
   parents: seq[BlockId[Dependencies]],
-  transactions: seq[Transaction[Dependencies]]
+  transactions: seq[Dependencies.Transaction]
 ): auto =
   var blck = Block[Dependencies](
     author: author,
