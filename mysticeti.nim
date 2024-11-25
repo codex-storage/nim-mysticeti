@@ -42,6 +42,10 @@ export blocks.round
 export blocks.parents
 export blocks.id
 
+import ./mysticeti/basics/immutableseq
+
+export immutableseq
+
 import ./mysticeti/blocks/signed
 
 export signed.SignedBlock

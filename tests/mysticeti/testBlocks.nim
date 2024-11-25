@@ -19,8 +19,8 @@ suite "Blocks":
     let blck = Block.new(author, round, parents, transactions)
     check blck.author == author
     check blck.round == round
-    check blck.parents == parents
-    check blck.transactions == blck.transactions
+    check blck.parents == parents.immutable
+    check blck.transactions == transactions.immutable
 
   test "blocks have an id consisting of author, round and hash":
     let blck = Block.example

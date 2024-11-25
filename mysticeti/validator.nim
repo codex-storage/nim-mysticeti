@@ -153,7 +153,7 @@ func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
     return
   without anchorProposal =? anchor.proposal:
     return
-  var todo = anchorProposal.blck.parents
+  var todo = anchorProposal.blck.parents.copy
   while todo.len > 0:
     let parent = todo.pop()
     if parent.round < round.number + 2:
@@ -164,7 +164,7 @@ func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
         return
       without parentBlock =? round.find(parent):
         raiseAssert "parent block not found"
-      todo.add(parentBlock.blck.parents)
+      todo.add(parentBlock.blck.parents.copy)
   slot.skip()
 
 iterator committed*(validator: Validator): auto =

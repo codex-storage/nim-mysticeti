@@ -3,12 +3,12 @@ import ../committee
 import ./blockid
 
 type
-  Block*[Dependencies] = object
+  Block*[Dependencies] = ref object
     id: BlockId[Dependencies]
     author: CommitteeMember
     round: uint64
-    parents: seq[BlockId[Dependencies]]
-    transactions: seq[Dependencies.Transaction]
+    parents: ImmutableSeq[BlockId[Dependencies]]
+    transactions: ImmutableSeq[Dependencies.Transaction]
 
 func calculateId(blck: var Block) =
   mixin hash
@@ -27,8 +27,8 @@ func new*[Dependencies](
   var blck = Block[Dependencies](
     author: author,
     round: round,
-    parents: parents,
-    transactions: transactions
+    parents: parents.immutable,
+    transactions: transactions.immutable
   )
   blck.calculateId()
   blck
