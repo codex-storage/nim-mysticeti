@@ -6,5 +6,6 @@ import ./mysticeti/validator/testRound
 import ./mysticeti/validator/testRounds
 import ./mysticeti/validator/testValidator
 import ./mysticeti/validator/testValidatorNetwork
+import ./mysticeti/validator/testFuzzing
 
 {.warning[UnusedImport]:off.}

@@ -3,6 +3,7 @@ import ./basics
 import ./simulator
 
 type SignedBlock = mysticeti.SignedBlock[MockDependencies]
+type Transaction = MockTransaction
 
 proc scenarioFigure4*(simulator: NetworkSimulator): ?!seq[seq[SignedBlock]] =
   # replays scenario from figure 4 in the Mysticeti paper
@@ -52,4 +53,23 @@ proc scenarioFigure4*(simulator: NetworkSimulator): ?!seq[seq[SignedBlock]] =
     0: @[2, 3, 0, 1]
 
   })
+  success proposals
+
+proc randomScenario*(simulator: NetworkSimulator): ?!seq[seq[SignedBlock]] =
+  var proposals: seq[seq[SignedBlock]]
+  let rounds = rand(100)
+  for round in 0..<rounds:
+    # one validator is allowed to deviate from the protocol
+    let deviant = simulator.validators.sample
+    for proposer in simulator.validators:
+      # 50% chance of not proposing a block
+      if proposer == deviant and rand(100) < 50:
+        continue
+      let proposal = ? proposer.propose(seq[Transaction].example)
+      for receiver in simulator.validators:
+        # 50% chance of not sending a block
+        if proposer == deviant and rand(100) < 50:
+          continue
+        ? exchangeBlock(proposer, receiver, proposal)
+    simulator.nextRound()
   success proposals

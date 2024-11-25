@@ -45,7 +45,8 @@ proc exchangeBlock*(proposer, receiver: Validator, blck: SignedBlock): ?!void =
         ? exchangeBlock(proposer, receiver, parent)
     checked = receiver.check(blck)
   # send proposal
-  receiver.receive(checked.blck)
+  if checked.verdict == BlockVerdict.correct:
+    receiver.receive(checked.blck)
   success()
 
 proc exchangeProposals*(simulator: NetworkSimulator, exchanges: openArray[(int, seq[int])]): ?!seq[SignedBlock] =
