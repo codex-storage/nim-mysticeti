@@ -10,8 +10,8 @@ export transaction
 export serialization
 
 type MockDependencies* = Dependencies[
-  MockHash,
-  MockSigning,
   MockTransaction,
-  MockSerialization
+  MockSerialization,
+  MockHash,
+  MockSigning
 ]
