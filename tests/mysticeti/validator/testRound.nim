@@ -120,6 +120,19 @@ suite "Validator Round":
     check third.previous == none Round
     check third.next == none Round
 
+  test "primary proposer rotates on a round-robin schedule":
+    var round: Round
+    round = Round.new(0, 4)
+    check round.primaryProposer == CommitteeMember(0)
+    round = Round.new(1, 4)
+    check round.primaryProposer == CommitteeMember(1)
+    round = Round.new(2, 4)
+    check round.primaryProposer == CommitteeMember(2)
+    round = Round.new(3, 4)
+    check round.primaryProposer == CommitteeMember(3)
+    round = Round.new(4, 4)
+    check round.primaryProposer == CommitteeMember(0)
+
   test "proposers are ordered round-robin for each round":
     var round: Round
     round = Round.new(0, 4)

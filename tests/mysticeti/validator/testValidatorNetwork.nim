@@ -19,6 +19,17 @@ suite "Validator Network":
   setup:
     simulator = NetworkSimulator.init()
 
+  test "primary proposer rotates on a round-robin schedule":
+    check simulator.validators.allIt(it.primaryProposer == CommitteeMember(0))
+    simulator.nextRound()
+    check simulator.validators.allIt(it.primaryProposer == CommitteeMember(1))
+    simulator.nextRound()
+    check simulator.validators.allIt(it.primaryProposer == CommitteeMember(2))
+    simulator.nextRound()
+    check simulator.validators.allIt(it.primaryProposer == CommitteeMember(3))
+    simulator.nextRound()
+    check simulator.validators.allIt(it.primaryProposer == CommitteeMember(0))
+
   test "validators include blocks from previous round as parents":
     let previous = !simulator.exchangeProposals()
     simulator.nextRound()

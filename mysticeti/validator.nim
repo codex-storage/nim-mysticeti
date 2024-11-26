@@ -33,6 +33,9 @@ func membership*(validator: Validator): CommitteeMember =
 func round*(validator: Validator): uint64 =
   validator.rounds.latest.number
 
+func primaryProposer*(validator: Validator): CommitteeMember =
+  validator.rounds.latest.primaryProposer
+
 func nextRound*(validator: Validator) =
   validator.rounds.addNewRound()
 

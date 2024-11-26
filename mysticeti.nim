@@ -10,6 +10,7 @@ export validator.new
 export validator.identifier
 export validator.membership
 export validator.round
+export validator.primaryProposer
 export validator.nextRound
 export validator.propose
 export validator.check

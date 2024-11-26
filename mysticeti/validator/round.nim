@@ -32,6 +32,9 @@ func next*(round: Round): auto =
 func `[]`*(round: Round, member: CommitteeMember): auto =
   round.slots[int(member)]
 
+func primaryProposer*(round: Round): CommitteeMember =
+  CommitteeMember((round.number mod round.slots.len.uint64).int)
+
 iterator proposers*(round: Round): CommitteeMember =
   let length = round.slots.len
   let offset = (round.number mod length.uint64).int
