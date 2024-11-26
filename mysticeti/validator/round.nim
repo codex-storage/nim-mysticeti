@@ -32,14 +32,14 @@ func next*(round: Round): auto =
 func `[]`*(round: Round, member: CommitteeMember): auto =
   round.slots[int(member)]
 
-iterator members*(round: Round): CommitteeMember =
+iterator proposers*(round: Round): CommitteeMember =
   let length = round.slots.len
   let offset = (round.number mod length.uint64).int
   for index in 0..<length:
     yield CommitteeMember((offset + index) mod length)
 
 iterator slots*(round: Round): auto =
-  for member in round.members:
+  for member in round.proposers:
     yield round[member]
 
 iterator proposals*(round: Round): auto =

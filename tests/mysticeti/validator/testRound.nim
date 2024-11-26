@@ -120,18 +120,18 @@ suite "Validator Round":
     check third.previous == none Round
     check third.next == none Round
 
-  test "members are ordered round-robin for each round":
+  test "proposers are ordered round-robin for each round":
     var round: Round
     round = Round.new(0, 4)
-    check toSeq(round.members) == @[0, 1, 2, 3].mapIt(CommitteeMember(it))
+    check toSeq(round.proposers) == @[0, 1, 2, 3].mapIt(CommitteeMember(it))
     round = Round.new(1, 4)
-    check toSeq(round.members) == @[1, 2, 3, 0].mapIt(CommitteeMember(it))
+    check toSeq(round.proposers) == @[1, 2, 3, 0].mapIt(CommitteeMember(it))
     round = Round.new(2, 4)
-    check toSeq(round.members) == @[2, 3, 0, 1].mapIt(CommitteeMember(it))
+    check toSeq(round.proposers) == @[2, 3, 0, 1].mapIt(CommitteeMember(it))
     round = Round.new(3, 4)
-    check toSeq(round.members) == @[3, 0, 1, 2].mapIt(CommitteeMember(it))
+    check toSeq(round.proposers) == @[3, 0, 1, 2].mapIt(CommitteeMember(it))
     round = Round.new(4, 4)
-    check toSeq(round.members) == @[0, 1, 2, 3].mapIt(CommitteeMember(it))
+    check toSeq(round.proposers) == @[0, 1, 2, 3].mapIt(CommitteeMember(it))
 
   test "slots are ordered round-robin too":
     let round = Round.new(2, 4)
