@@ -1,10 +1,8 @@
-import ./dependencies/signing
-
-export signing
-
 type Dependencies*[
   Transaction,
   Serialization,
   Hash,
-  Signing
+  Identity,
+  Identifier,
+  Signature
 ] = object

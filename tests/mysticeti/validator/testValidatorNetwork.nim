@@ -8,7 +8,7 @@ suite "Validator Network":
 
   type Validator = mysticeti.Validator[MockDependencies]
   type Committee = mysticeti.Committee[MockDependencies]
-  type Identity = mysticeti.Identity[MockDependencies]
+  type Identity = MockDependencies.Identity
   type Transaction = MockDependencies.Transaction
   type Block = blocks.Block[MockDependencies]
   type BlockId = blocks.BlockId[MockDependencies]
@@ -61,7 +61,7 @@ suite "Validator Network":
 
   test "refuses proposals that are not signed by the author":
     let proposal = !simulator.propose(1)
-    let signedByOther = simulator.identities[2].sign(proposal.blck)
+    let signedByOther = proposal.blck.sign(simulator.identities[2])
     let checked = simulator.validators[0].check(signedByOther)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block is not signed by its author"
@@ -86,7 +86,7 @@ suite "Validator Network":
       parents & badparent,
       seq[Transaction].example
     )
-    let proposal = simulator.identities[0].sign(blck)
+    let proposal = blck.sign(simulator.identities[0])
     let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block has a parent from an invalid round"
@@ -101,7 +101,7 @@ suite "Validator Network":
       parents & badparent,
       seq[Transaction].example
     )
-    let proposal = simulator.identities[0].sign(blck)
+    let proposal = blck.sign(simulator.identities[0])
     let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block includes a parent more than once"
@@ -115,7 +115,7 @@ suite "Validator Network":
       parents[0..<2],
       seq[Transaction].example
     )
-    let proposal = simulator.identities[0].sign(blck)
+    let proposal = blck.sign(simulator.identities[0])
     let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason ==
@@ -312,12 +312,12 @@ suite "Validator Network":
       3: @[0, 1, 2, 3]
     })
     # validator 0 creates two different proposals
-    let proposalA, proposalB = simulator.identities[0].sign(Block.new(
+    let proposalA, proposalB = Block.new(
       author = CommitteeMember(0),
       round = 0,
       parents = @[],
       transactions = seq[Transaction].example(length = 1..10)
-    ))
+    ).sign(simulator.identities[0])
     # validator 0 sends different proposals to different parts of the network
     !exchangeBlock(simulator.validators[0], simulator.validators[0], proposalA)
     !exchangeBlock(simulator.validators[0], simulator.validators[1], proposalA)

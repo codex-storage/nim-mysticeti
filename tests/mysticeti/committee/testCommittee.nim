@@ -1,12 +1,11 @@
 import ../basics
 import mysticeti
 import mysticeti/committee
-import mysticeti/dependencies/signing
 
 suite "Committee":
 
-  type Identifier = signing.Identifier[MockDependencies]
-  type Committee = committee.Committee[MockDependencies]
+  type Identifier = MockDependencies.Identifier
+  type Committee = committee.Committee[Identifier]
 
   test "committee has numbered members":
     let identifiers = array[4, Identifier].example

@@ -9,22 +9,27 @@ export slots
 export checks
 
 type Validator*[Dependencies] = ref object
-  identity: Identity[Dependencies]
-  committee: Committee[Dependencies]
+  identity: Dependencies.Identity
+  committee: Committee[Dependencies.Identifier]
   membership: CommitteeMember
   rounds: Rounds[Dependencies]
 
-func new*(T: type Validator; identity: Identity, committee: Committee): ?!T =
+func new*[Dependencies](
+  _: type Validator[Dependencies],
+  identity: Dependencies.Identity,
+  committee: Committee[Dependencies.Identifier]
+): ?!Validator[Dependencies] =
   without membership =? committee.membership(identity.identifier):
-    return T.failure "identity is not a member of the committee"
-  success T(
+    return failure "identity is not a member of the committee"
+  success Validator[Dependencies](
     identity: identity,
     committee: committee,
     membership: membership,
-    rounds: Rounds[T.Dependencies].init(committee.size)
+    rounds: Rounds[Dependencies].init(committee.size)
   )
 
 func identifier*(validator: Validator): auto =
+  mixin identifier
   validator.identity.identifier
 
 func membership*(validator: Validator): CommitteeMember =
@@ -101,7 +106,7 @@ proc propose*[Transaction](validator: Validator, transactions: seq[Transaction])
     parents = parents,
     transactions = transactions
   )
-  let signedBlock = validator.identity.sign(blck)
+  let signedBlock = blck.sign(validator.identity)
   validator.addBlock(signedBlock)
   success signedBlock
 

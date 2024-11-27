@@ -52,11 +52,3 @@ import ./mysticeti/blocks/signed
 export signed.SignedBlock
 export signed.blck
 export signed.signer
-
-import ./mysticeti/dependencies/signing
-
-export signing.Identity
-export signing.Identifier
-export signing.init
-export signing.identifier
-export signing.`$`

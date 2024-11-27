@@ -2,7 +2,7 @@ import ../basics
 import mysticeti
 
 type Validator = mysticeti.Validator[MockDependencies]
-type Identity = mysticeti.Identity[MockDependencies]
+type Identity = MockDependencies.Identity
 type Committee = mysticeti.Committee[MockDependencies]
 type Transaction = MockDependencies.Transaction
 

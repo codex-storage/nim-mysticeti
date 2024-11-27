@@ -2,22 +2,29 @@ import ../basics
 import ./members
 
 type
-  Committee*[Dependencies] = ref object
-    members: seq[Identifier[Dependencies]]
+  Committee*[Identifier] = ref object
+    members: seq[Identifier]
     stakes: seq[Stake]
   Stake* = float64
 
-func new*(T: type Committee, stakes: openArray[(Identifier, Stake)]): auto =
-  var committee = T()
-  for (member, stake) in stakes:
-    committee.members.add(member)
-    committee.stakes.add(stake)
-  committee
+func new*[Identifier](
+  _: type Committee,
+  staking: openArray[(Identifier, Stake)]
+): auto =
+  var members: seq[Identifier]
+  var stakes: seq[Stake]
+  for (member, stake) in staking:
+    members.add(member)
+    stakes.add(stake)
+  Committee[Identifier](members: members, stakes: stakes)
 
 func size*(committee: Committee): int =
   committee.members.len
 
-func membership*(committee: Committee, identifier: Identifier): ?CommitteeMember =
+func membership*(
+  committee: Committee,
+  identifier: Committee.Identifier
+): ?CommitteeMember =
   let index = committee.members.find(identifier)
   if index < 0:
     none CommitteeMember
@@ -27,7 +34,7 @@ func membership*(committee: Committee, identifier: Identifier): ?CommitteeMember
 func stake*(committee: Committee, member: CommitteeMember): Stake =
   committee.stakes[int(member)]
 
-func stake*(committee: Committee, identifier: Identifier): Stake =
+func stake*(committee: Committee, identifier: Committee.Identifier): Stake =
   if member =? committee.membership(identifier):
     committee.stake(member)
   else:

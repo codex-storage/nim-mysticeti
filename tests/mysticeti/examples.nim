@@ -2,16 +2,10 @@ import std/random
 import std/sequtils
 import mysticeti
 import mysticeti/blocks
-import mysticeti/dependencies
+import ./mocks
 
 proc example*(T: type SomeInteger): T =
   rand(T)
-
-proc example*(T: type Identity): T =
-  T.init()
-
-proc example*(T: type Identifier): T =
-  Identity[T.Dependencies].example.identifier
 
 proc example*(T: type CommitteeMember): T =
   CommitteeMember(int.example)
@@ -37,9 +31,9 @@ proc example*(
   author = CommitteeMember.example,
   round = uint64.example
 ): T =
-  let identity = Identity[T.Dependencies].example
+  let identity = T.Dependencies.Identity.example
   let blck = Block[T.Dependencies].example(author = author, round = round)
-  identity.sign(blck)
+  blck.sign(identity)
 
 proc example*[T](_: type seq[T], length=0..10): seq[T] =
   let size = rand(length)
@@ -48,3 +42,12 @@ proc example*[T](_: type seq[T], length=0..10): seq[T] =
 proc example*[len: static int, T](_: type array[len, T]): array[len, T] =
   for index in result.low..result.high:
     result[index] = T.example
+
+proc example*(_: type MockHash): MockHash =
+  MockHash.hash(seq[byte].example)
+
+proc example*(T: type MockIdentity): T =
+  T.init()
+
+proc example*(T: type MockIdentifier): T =
+  MockIdentity.example.identifier

@@ -13,5 +13,7 @@ type MockDependencies* = Dependencies[
   MockTransaction,
   MockSerialization,
   MockHash,
-  MockSigning
+  MockIdentity,
+  MockIdentifier,
+  MockSignature
 ]

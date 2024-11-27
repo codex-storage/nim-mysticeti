@@ -6,7 +6,7 @@ suite "Blocks":
 
   type Block = mysticeti.Block[MockDependencies]
   type BlockId = mysticeti.BlockId[MockDependencies]
-  type Identity = mysticeti.Identity[MockDependencies]
+  type Identity = MockDependencies.Identity
   type Transaction = MockDependencies.Transaction
   type Hash = MockDependencies.Hash
   type Serialization = MockDependencies.Serialization
@@ -32,6 +32,6 @@ suite "Blocks":
   test "blocks can be signed":
     let signer = Identity.init
     let blck = Block.example
-    let signed = signer.sign(blck)
+    let signed = blck.sign(signer)
     check signed.blck == blck
     check signed.signer == signer.identifier

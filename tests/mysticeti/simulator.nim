@@ -4,7 +4,7 @@ import mysticeti/blocks
 
 type Validator = mysticeti.Validator[MockDependencies]
 type Committee = mysticeti.Committee[MockDependencies]
-type Identity = mysticeti.Identity[MockDependencies]
+type Identity = MockDependencies.Identity
 type Transaction = MockDependencies.Transaction
 type SignedBlock = blocks.SignedBlock[MockDependencies]
 
