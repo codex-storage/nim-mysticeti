@@ -13,7 +13,7 @@ suite "Validator":
   setup:
     let identity = Identity.init()
     let committee = Committee.new({identity.identifier: 1/1})
-    validator = !Validator.new(identity, committee)
+    validator = Validator.new(identity, committee)
 
   test "starts at round 0":
     check validator.round == 0

@@ -69,7 +69,7 @@ suite "Validator Network":
   test "refuses proposals that are not signed by a committee member":
     let otherIdentity = Identity.example
     let otherCommittee = Committee.new({otherIdentity.identifier: 1/1})
-    let otherValidator = !Validator.new(otherIdentity, otherCommittee)
+    let otherValidator = Validator.new(otherIdentity, otherCommittee)
     let proposal = !otherValidator.propose(seq[Transaction].example)
     let checked = simulator.validators[0].check(proposal)
     check checked.verdict == BlockVerdict.invalid

@@ -18,10 +18,10 @@ func new*[Dependencies](
   _: type Validator[Dependencies],
   identity: Dependencies.Identity,
   committee: Committee[Dependencies.Identifier]
-): ?!Validator[Dependencies] =
+): Validator[Dependencies] =
   without membership =? committee.membership(identity.identifier):
-    return failure "identity is not a member of the committee"
-  success Validator[Dependencies](
+    raiseAssert "identity is not a member of the committee"
+  Validator[Dependencies](
     identity: identity,
     committee: committee,
     membership: membership,
