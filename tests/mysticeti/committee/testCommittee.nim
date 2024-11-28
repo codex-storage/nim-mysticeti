@@ -16,12 +16,12 @@ suite "Committee":
 
   test "members have stake":
     let identifiers = array[4, Identifier].example
-    let stakes = @[
-      (identifiers[0], 1/8),
-      (identifiers[1], 1/2),
-      (identifiers[2], 1/4),
-      (identifiers[3], 1/8)
-    ]
+    let stakes = @{
+      identifiers[0]: 1/8,
+      identifiers[1]: 1/2,
+      identifiers[2]: 1/4,
+      identifiers[3]: 1/8
+    }
     let committee = Committee.new(stakes)
     for (identifier, stake) in stakes:
       let member = !committee.membership(identifier)
