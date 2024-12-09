@@ -4,18 +4,11 @@ import ./blockid
 
 type
   Block*[Dependencies] = ref object
-    id: BlockId[Dependencies]
     author: CommitteeMember
     round: uint64
     parents: ImmutableSeq[BlockId[Dependencies]]
     transactions: ImmutableSeq[Dependencies.Transaction]
-
-func calculateId(blck: var Block) =
-  mixin hash
-  type Dependencies = Block.Dependencies
-  let blockBytes = Dependencies.Serialization.toBytes(blck)
-  let blockHash = Dependencies.Hash.hash(blockBytes)
-  blck.id = BlockId[Dependencies].new(blck.author, blck.round, blockHash)
+    id: ?BlockId[Dependencies]
 
 func new*[Dependencies](
   _: type Block[Dependencies];
@@ -24,14 +17,12 @@ func new*[Dependencies](
   parents: seq[BlockId[Dependencies]],
   transactions: seq[Dependencies.Transaction]
 ): auto =
-  var blck = Block[Dependencies](
+  Block[Dependencies](
     author: author,
     round: round,
     parents: parents.immutable,
     transactions: transactions.immutable
   )
-  blck.calculateId()
-  blck
 
 func author*(blck: Block): auto =
   blck.author
@@ -46,4 +37,11 @@ func transactions*(blck: Block): auto =
   blck.transactions
 
 func id*(blck: Block): auto =
-  blck.id
+  without var id =? blck.id:
+    type Dependencies = Block.Dependencies
+    mixin hash
+    let blockBytes = Dependencies.Serialization.toBytes(blck)
+    let blockHash = Dependencies.Hash.hash(blockBytes)
+    id = BlockId[Dependencies].new(blck.author, blck.round, blockHash)
+    blck.id = some id
+  id
