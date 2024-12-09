@@ -6,6 +6,7 @@ type Validator = mysticeti.Validator[MockDependencies]
 type Committee = mysticeti.Committee[MockDependencies]
 type Identity = MockDependencies.Identity
 type Transaction = MockDependencies.Transaction
+type Block = blocks.Block[MockDependencies]
 type SignedBlock = blocks.SignedBlock[MockDependencies]
 
 type NetworkSimulator* = object
@@ -29,11 +30,24 @@ func nextRound*(simulator: NetworkSimulator) =
   for validator in simulator.validators:
     validator.nextRound()
 
-proc propose*(simulator: NetworkSimulator, validatorIndex: int): ?!SignedBlock =
-  simulator.validators[validatorIndex].propose(seq[Transaction].example)
+proc propose*(simulator: NetworkSimulator, validatorIndex: int): SignedBlock =
+  let validator = simulator.validators[validatorIndex]
+  let identity = simulator.identities[validatorIndex]
+  let author = validator.membership
+  let round = validator.round
+  let parents = validator.parentBlocks()
+  let transactions = seq[Transaction].example
+  let blck = Block.new(author, round, parents, transactions)
+  let signed = blck.sign(identity)
+  let checked = validator.check(signed)
+  validator.receive(checked.blck)
+  signed
 
-proc propose*(simulator: NetworkSimulator): ?!seq[SignedBlock] =
-  success simulator.validators.mapit(? it.propose(seq[Transaction].example))
+proc propose*(simulator: NetworkSimulator): seq[SignedBlock] =
+  var proposals: seq[SignedBlock]
+  for index in 0..<simulator.validators.len:
+    proposals.add(simulator.propose(index))
+  proposals
 
 proc exchangeBlock*(proposer, receiver: Validator, blck: SignedBlock): ?!void =
   # check validity of block
@@ -51,7 +65,7 @@ proc exchangeBlock*(proposer, receiver: Validator, blck: SignedBlock): ?!void =
 
 proc exchangeProposals*(simulator: NetworkSimulator, exchanges: openArray[(int, seq[int])]): ?!seq[SignedBlock] =
   # proposes new blocks and exchanges them with the specified receivers
-  let proposals = exchanges.mapIt(? simulator.propose(it[0]))
+  let proposals = exchanges.mapIt(simulator.propose(it[0]))
   for (index, exchange) in exchanges.pairs:
     let (proposer, receivers) = exchange
     let proposal = proposals[index]

@@ -12,7 +12,7 @@ export validator.membership
 export validator.round
 export validator.primaryProposer
 export validator.nextRound
-export validator.propose
+export validator.parentBlocks
 export validator.check
 export validator.receive
 export validator.getBlock

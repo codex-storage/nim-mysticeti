@@ -60,16 +60,19 @@ proc randomScenario*(simulator: NetworkSimulator): ?!seq[seq[SignedBlock]] =
   let rounds = rand(100)
   for round in 0..<rounds:
     # one validator is allowed to deviate from the protocol
-    let deviant = simulator.validators.sample
-    for proposer in simulator.validators:
+    let deviant = rand(0..<simulator.validators.len)
+    var exchanges: seq[(int, seq[int])]
+    for proposer in simulator.validators.low..simulator.validators.high:
       # 50% chance of not proposing a block
       if proposer == deviant and rand(100) < 50:
         continue
-      let proposal = ? proposer.propose(seq[Transaction].example)
-      for receiver in simulator.validators:
+      var receivers: seq[int]
+      for receiver in simulator.validators.low..simulator.validators.high:
         # 50% chance of not sending a block
         if proposer == deviant and rand(100) < 50:
           continue
-        ? exchangeBlock(proposer, receiver, proposal)
+        receivers.add(receiver)
+      exchanges.add( (proposer, receivers) )
+    proposals.add(? simulator.exchangeProposals(exchanges))
     simulator.nextRound()
   success proposals

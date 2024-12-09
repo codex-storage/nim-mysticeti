@@ -83,32 +83,13 @@ func addBlock(validator: Validator, signedBlock: SignedBlock) =
     validator.updateSkipped(signedBlock.blck)
     validator.updateCertified(signedBlock.blck)
 
-proc propose*(validator: Validator, transactions: seq[Validator.Dependencies.Transaction]): auto =
-  type Block = blocks.Block[Validator.Dependencies]
-  type SignedBlock = blocks.SignedBlock[Validator.Dependencies]
-  let round = validator.rounds.latest
-  if round[validator.membership].proposals.len > 0:
-    return SignedBlock.failure "already proposed this round"
+func parentBlocks*(validator: Validator): auto =
   var parents: seq[BlockId[Validator.Dependencies.Hash]]
-  var parentStake: Stake
-  if previous =? round.previous:
+  if previous =? validator.rounds.latest.previous:
     for slot in previous.slots:
       if slot.proposals.len == 1:
-        let parent = slot.proposals[0].blck
-        parents.add(parent.id)
-        parentStake += validator.committee.stake(parent.author)
-  if round.number > 0:
-    if parentStake <= 2/3:
-      return SignedBlock.failure "not enough parents to represent > 2/3 stake"
-  let blck = Block.new(
-    author = validator.membership,
-    round = round.number,
-    parents = parents,
-    transactions = transactions
-  )
-  let signedBlock = blck.sign(validator.identity)
-  validator.addBlock(signedBlock)
-  success signedBlock
+        parents.add(slot.proposals[0].blck.id)
+  parents
 
 func check*(validator: Validator, signed: SignedBlock): auto =
   type BlockCheck = checks.BlockCheck[SignedBlock.Dependencies]

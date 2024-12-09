@@ -6,9 +6,6 @@ import mysticeti/blocks
 
 suite "Validator Network":
 
-  type Validator = mysticeti.Validator[MockDependencies]
-  type Committee = mysticeti.Committee[MockDependencies]
-  type Identity = MockDependencies.Identity
   type Transaction = MockDependencies.Transaction
   type Block = blocks.Block[MockDependencies]
   type BlockId = blocks.BlockId[MockDependencies.Hash]
@@ -18,6 +15,18 @@ suite "Validator Network":
 
   setup:
     simulator = NetworkSimulator.init()
+
+  test "validators starts at round 0":
+    for validator in simulator.validators:
+      check validator.round == 0
+
+  test "validators can move to next round":
+    for validator in simulator.validators:
+      validator.nextRound()
+      check validator.round == 1
+      validator.nextRound()
+      validator.nextRound()
+      check validator.round == 3
 
   test "primary proposer rotates on a round-robin schedule":
     check simulator.validators.allIt(it.primaryProposer == CommitteeMember(0))
@@ -30,29 +39,15 @@ suite "Validator Network":
     simulator.nextRound()
     check simulator.validators.allIt(it.primaryProposer == CommitteeMember(0))
 
-  test "validators include blocks from previous round as parents":
+  test "validators expose blocks from previous round as parents":
     let previous = !simulator.exchangeProposals()
     simulator.nextRound()
-    let proposal = !simulator.propose(0)
-    for parent in previous:
-      check parent.blck.id in proposal.blck.parents
-
-  test "validator can't propose a block with too few parents":
-    # first round: validator 0 does not receive enough proposals for >2/3 stake
-    discard !simulator.exchangeProposals {
-      0: @[0, 1, 2, 3],
-      1: @[1, 2, 3],
-      2: @[1, 2, 3],
-      3: @[0, 1, 2, 3]
-    }
-    # second round: validator 0 cannot propose a block
-    simulator.nextRound()
-    let outcome = simulator.propose(0)
-    check outcome.isFailure
-    check outcome.error.msg == "not enough parents to represent > 2/3 stake"
+    let parents = simulator.validators[0].parentBlocks
+    for proposal in previous:
+      check proposal.blck.id in parents
 
   test "by default received proposals are undecided":
-    let proposal = !simulator.propose(1)
+    let proposal = simulator.propose(1)
     let round = proposal.blck.round
     let author = proposal.blck.author
     let checked = simulator.validators[0].check(proposal)
@@ -60,17 +55,15 @@ suite "Validator Network":
     check simulator.validators[0].status(round, author) == some SlotStatus.undecided
 
   test "refuses proposals that are not signed by the author":
-    let proposal = !simulator.propose(1)
+    let proposal = simulator.propose(1)
     let signedByOther = proposal.blck.sign(simulator.identities[2])
     let checked = simulator.validators[0].check(signedByOther)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block is not signed by its author"
 
   test "refuses proposals that are not signed by a committee member":
-    let otherIdentity = Identity.example
-    let otherCommittee = Committee.new({otherIdentity.identifier: 1/1})
-    let otherValidator = Validator.new(otherIdentity, otherCommittee)
-    let proposal = !otherValidator.propose(seq[Transaction].example)
+    let otherSimulator = NetworkSimulator.init()
+    let proposal = otherSimulator.propose(1)
     let checked = simulator.validators[0].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block is not signed by a committee member"
@@ -131,7 +124,7 @@ suite "Validator Network":
     }
     # second round: validator 0 creates block with parent that others didn't see
     simulator.nextRound()
-    let proposal = !simulator.propose(0)
+    let proposal = simulator.propose(0)
     # other validator will not accept block before it receives the parent
     let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.incomplete
@@ -158,14 +151,14 @@ suite "Validator Network":
     discard toSeq(simulator.validators[1].committed())
     # validator 0 comes back online and creates block for second round
     simulator.validators[0].nextRound()
-    let proposal = !simulator.propose(0)
+    let proposal = simulator.propose(0)
     # validator 1 accepts block even though parent has already been cleaned up
     check simulator.validators[1].check(proposal).verdict == BlockVerdict.correct
 
   test "refuses proposals with a round number that is too high":
     discard !simulator.exchangeProposals()
     simulator.validators[0].nextRound()
-    let proposal = !simulator.propose(0)
+    let proposal = simulator.propose(0)
     let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block has a round number that is too high"
@@ -188,7 +181,7 @@ suite "Validator Network":
     let author = proposals[0].blck.author
     # second round: voting
     simulator.nextRound()
-    let votes = !simulator.propose()
+    let votes = simulator.propose()
     simulator.validators[0].receive(simulator.validators[0].check(votes[1]).blck)
     simulator.validators[0].receive(simulator.validators[0].check(votes[2]).blck)
     check simulator.validators[0].status(round, author) == some SlotStatus.undecided
@@ -232,7 +225,7 @@ suite "Validator Network":
     discard !simulator.exchangeProposals()
     # third round: certifying
     simulator.nextRound()
-    let certificates = !simulator.propose()
+    let certificates = simulator.propose()
     simulator.validators[0].receive(simulator.validators[0].check(certificates[1]).blck)
     check simulator.validators[0].status(round, author) == some SlotStatus.undecided
     simulator.validators[0].receive(simulator.validators[0].check(certificates[2]).blck)
