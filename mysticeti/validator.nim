@@ -9,28 +9,27 @@ export slots
 export checks
 
 type Validator*[Dependencies] = ref object
-  identity: Dependencies.Identity
+  identifier: Dependencies.Identifier
   committee: Committee[Dependencies.Identifier]
   membership: CommitteeMember
   rounds: Rounds[Dependencies]
 
 func new*[Dependencies](
   _: type Validator[Dependencies],
-  identity: Dependencies.Identity,
+  identifier: Dependencies.Identifier,
   committee: Committee[Dependencies.Identifier]
 ): Validator[Dependencies] =
-  without membership =? committee.membership(identity.identifier):
+  without membership =? committee.membership(identifier):
     raiseAssert "identity is not a member of the committee"
   Validator[Dependencies](
-    identity: identity,
+    identifier: identifier,
     committee: committee,
     membership: membership,
     rounds: Rounds[Dependencies].init(committee.size)
   )
 
 func identifier*(validator: Validator): auto =
-  mixin identifier
-  validator.identity.identifier
+  validator.identifier
 
 func membership*(validator: Validator): CommitteeMember =
   validator.membership

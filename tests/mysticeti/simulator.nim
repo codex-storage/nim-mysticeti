@@ -17,7 +17,7 @@ proc init*(_: type NetworkSimulator, numberOfValidators = 4): NetworkSimulator =
   let identities = newSeqWith(numberOfValidators, Identity.init())
   let stakes = identities.mapIt( (it.identifier, 1/numberOfValidators) )
   let committee = Committee.new(stakes)
-  let validators = identities.mapIt(Validator.new(it, committee))
+  let validators = identities.mapIt(Validator.new(it.identifier, committee))
   NetworkSimulator(identities: identities, validators: validators)
 
 func identities*(simulator: NetworkSimulator): seq[Identity] =
