@@ -36,19 +36,8 @@ export committee.`$`
 
 import ./mysticeti/blocks
 
-export blocks.Block
 export blocks.BlockId
-export blocks.author
-export blocks.round
-export blocks.parents
-export blocks.id
-
-import ./mysticeti/basics/immutableseq
-
-export immutableseq
-
-import ./mysticeti/blocks/signed
-
-export signed.SignedBlock
-export signed.blck
-export signed.signer
+export blocks.new
+export blocks.SignedBlock
+export blocks.blck
+export blocks.signer

@@ -7,7 +7,7 @@ import mysticeti/validator/round
 suite "Validator Round":
 
   type Round = round.Round[MockDependencies]
-  type Block = mysticeti.Block[MockDependencies]
+  type Block = MockBlock
   type SignedBlock = mysticeti.SignedBlock[MockDependencies]
 
   test "rounds have a number":

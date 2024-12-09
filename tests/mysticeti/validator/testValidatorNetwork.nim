@@ -6,8 +6,9 @@ import mysticeti/blocks
 
 suite "Validator Network":
 
-  type Transaction = MockDependencies.Transaction
-  type Block = blocks.Block[MockDependencies]
+  type Transaction = MockTransaction
+  type Block = MockBlock
+  type SignedBlock = blocks.SignedBlock[MockDependencies]
   type BlockId = blocks.BlockId[MockDependencies.Hash]
   type Hash = MockDependencies.Hash
 

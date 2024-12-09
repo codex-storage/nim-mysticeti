@@ -65,6 +65,7 @@ func find*(round: Round, number: uint64): ?Round =
       current = previous
 
 func find*(round: Round, blockId: BlockId): auto =
+  mixin id
   if found =? round.find(blockId.round):
     let slot = found[blockId.author]
     for proposal in slot.proposals:

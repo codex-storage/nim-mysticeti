@@ -69,6 +69,7 @@ func certifyBy*(proposal: Proposal, certificate: BlockId, stake: Stake) =
     proposal.slot.status = SlotStatus.commit
 
 func certify*(proposal, anchor: Proposal) =
+  mixin id
   assert proposal.slot.status == SlotStatus.undecided
   assert anchor.slot.status == SlotStatus.commit
   assert anchor.certifiedBy.stake > 2/3

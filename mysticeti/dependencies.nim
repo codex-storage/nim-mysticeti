@@ -1,6 +1,5 @@
 type Dependencies*[
-  Transaction,
-  Serialization,
+  Block,
   Hash,
   Identifier,
   Signature

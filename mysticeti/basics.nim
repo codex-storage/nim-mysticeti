@@ -11,7 +11,3 @@ export results
 import ./dependencies
 
 export dependencies
-
-import ./basics/immutableseq
-
-export immutableseq

@@ -17,23 +17,13 @@ proc example*(T: type BlockId): T =
   BlockId.new(author, round, hash)
 
 proc example*(
-  T: type Block,
-  author = CommitteeMember.example,
-  round = uint64.example
-): T =
-  type Transaction = T.Dependencies.Transaction
-  let parents = seq[BlockId[T.Dependencies.Hash]].example
-  let transactions = seq[Transaction].example
-  T.new(author, round, parents, transactions)
-
-proc example*(
   T: type SignedBlock,
   author = CommitteeMember.example,
   round = uint64.example
 ): T =
-  let blck = Block[T.Dependencies].example(author = author, round = round)
+  let blck = T.Dependencies.Block.example(author = author, round = round)
   let signature = T.Dependencies.Signature.example
-  SignedBlock.init(blck, signature)
+  SignedBlock[T.Dependencies].init(blck, signature)
 
 proc example*[T](_: type seq[T], length=0..10): seq[T] =
   let size = rand(length)
@@ -54,3 +44,12 @@ proc example*(T: type MockIdentifier): T =
 
 proc example*(T: type MockSignature): T =
   MockIdentity.example.sign(MockHash.example)
+
+proc example*(
+  _: type MockBlock,
+  author = CommitteeMember.example,
+  round = uint64.example
+): MockBlock =
+  let parents = seq[BlockId[MockHash]].example
+  let transactions = seq[MockTransaction].example
+  MockBlock.new(author, round, parents, transactions)

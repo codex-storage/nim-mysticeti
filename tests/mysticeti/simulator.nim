@@ -5,8 +5,8 @@ import mysticeti/blocks
 type Validator = mysticeti.Validator[MockDependencies]
 type Committee = mysticeti.Committee[MockDependencies]
 type Identity = MockIdentity
-type Transaction = MockDependencies.Transaction
-type Block = blocks.Block[MockDependencies]
+type Transaction = MockTransaction
+type Block = MockBlock
 type SignedBlock = blocks.SignedBlock[MockDependencies]
 
 type NetworkSimulator* = object

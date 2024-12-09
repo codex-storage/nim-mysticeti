@@ -43,13 +43,12 @@ func primaryProposer*(validator: Validator): CommitteeMember =
 func nextRound*(validator: Validator) =
   validator.rounds.addNewRound()
 
-func skips(blck: Block, round: uint64, author: CommitteeMember): bool =
-  for parent in blck.parents:
-    if parent.round == round and parent.author == author:
-      return false
-  true
-
-func updateSkipped(validator: Validator, supporter: Block) =
+func updateSkipped(validator: Validator, supporter: Validator.Dependencies.Block) =
+  func skips(blck: Validator.Dependencies.Block, round: uint64, author: CommitteeMember): bool =
+    for parent in blck.parents:
+      if parent.round == round and parent.author == author:
+        return false
+    true
   if round =? validator.rounds.latest.find(supporter.round) and
      previous =? round.previous:
     for proposer in previous.proposers:
@@ -59,7 +58,8 @@ func updateSkipped(validator: Validator, supporter: Block) =
         let stake = validator.committee.stake(author)
         slot.skipBy(author, stake)
 
-func updateCertified(validator: Validator, certificate: Block) =
+func updateCertified(validator: Validator, certificate: Validator.Dependencies.Block) =
+  mixin id
   without certifying =? validator.rounds.latest.find(certificate.round) and
           voting =? certifying.previous and
           proposing =? voting.previous:
@@ -83,6 +83,7 @@ func addBlock(validator: Validator, signedBlock: SignedBlock) =
     validator.updateCertified(signedBlock.blck)
 
 func parentBlocks*(validator: Validator): auto =
+  mixin id
   var parents: seq[BlockId[Validator.Dependencies.Hash]]
   if previous =? validator.rounds.latest.previous:
     for slot in previous.slots:
@@ -91,6 +92,7 @@ func parentBlocks*(validator: Validator): auto =
   parents
 
 func check*(validator: Validator, signed: SignedBlock): auto =
+  mixin id
   type BlockCheck = checks.BlockCheck[SignedBlock.Dependencies]
   type BlockId = blocks.BlockId[SignedBlock.Dependencies.Hash]
   without member =? validator.committee.membership(signed.signer):
@@ -141,7 +143,7 @@ func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
     return
   without anchorProposal =? anchor.proposal:
     return
-  var todo = anchorProposal.blck.parents.copy
+  var todo = anchorProposal.blck.parents
   while todo.len > 0:
     let parent = todo.pop()
     if parent.round < round.number + 2:
@@ -152,7 +154,7 @@ func updateIndirect(validator: Validator, slot: ProposerSlot, round: Round) =
         return
       without parentBlock =? round.find(parent):
         raiseAssert "parent block not found"
-      todo.add(parentBlock.blck.parents.copy)
+      todo.add(parentBlock.blck.parents)
   slot.skip()
 
 iterator committed*(validator: Validator): auto =
