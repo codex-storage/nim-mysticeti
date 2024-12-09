@@ -31,9 +31,9 @@ proc example*(
   author = CommitteeMember.example,
   round = uint64.example
 ): T =
-  let identity = T.Dependencies.Identity.example
   let blck = Block[T.Dependencies].example(author = author, round = round)
-  blck.sign(identity)
+  let signature = T.Dependencies.Signature.example
+  SignedBlock.init(blck, signature)
 
 proc example*[T](_: type seq[T], length=0..10): seq[T] =
   let size = rand(length)
@@ -51,3 +51,6 @@ proc example*(T: type MockIdentity): T =
 
 proc example*(T: type MockIdentifier): T =
   MockIdentity.example.identifier
+
+proc example*(T: type MockSignature): T =
+  MockIdentity.example.sign(MockHash.example)

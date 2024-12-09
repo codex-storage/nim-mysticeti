@@ -4,7 +4,7 @@ import mysticeti/blocks
 
 type Validator = mysticeti.Validator[MockDependencies]
 type Committee = mysticeti.Committee[MockDependencies]
-type Identity = MockDependencies.Identity
+type Identity = MockIdentity
 type Transaction = MockDependencies.Transaction
 type Block = blocks.Block[MockDependencies]
 type SignedBlock = blocks.SignedBlock[MockDependencies]
@@ -38,7 +38,8 @@ proc propose*(simulator: NetworkSimulator, validatorIndex: int): SignedBlock =
   let parents = validator.parentBlocks()
   let transactions = seq[Transaction].example
   let blck = Block.new(author, round, parents, transactions)
-  let signed = blck.sign(identity)
+  let signature = identity.sign(blck.id.hash)
+  let signed = SignedBlock.init(blck, signature)
   let checked = validator.check(signed)
   validator.receive(checked.blck)
   signed
