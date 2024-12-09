@@ -51,7 +51,7 @@ suite "Validator Network":
     let round = proposal.blck.round
     let author = proposal.blck.author
     let checked = simulator.validators[0].check(proposal)
-    simulator.validators[0].receive(checked.blck)
+    simulator.validators[0].add(checked.blck)
     check simulator.validators[0].status(round, author) == some SlotStatus.undecided
 
   test "refuses proposals that are not signed by the author":
@@ -186,10 +186,10 @@ suite "Validator Network":
     # second round: voting
     simulator.nextRound()
     let votes = simulator.propose()
-    simulator.validators[0].receive(simulator.validators[0].check(votes[1]).blck)
-    simulator.validators[0].receive(simulator.validators[0].check(votes[2]).blck)
+    simulator.validators[0].add(simulator.validators[0].check(votes[1]).blck)
+    simulator.validators[0].add(simulator.validators[0].check(votes[2]).blck)
     check simulator.validators[0].status(round, author) == some SlotStatus.undecided
-    simulator.validators[0].receive(simulator.validators[0].check(votes[3]).blck)
+    simulator.validators[0].add(simulator.validators[0].check(votes[3]).blck)
     check simulator.validators[0].status(round, author) == some SlotStatus.skip
 
   test "skips blocks that are ignored by blocks that are received later":
@@ -230,9 +230,9 @@ suite "Validator Network":
     # third round: certifying
     simulator.nextRound()
     let certificates = simulator.propose()
-    simulator.validators[0].receive(simulator.validators[0].check(certificates[1]).blck)
+    simulator.validators[0].add(simulator.validators[0].check(certificates[1]).blck)
     check simulator.validators[0].status(round, author) == some SlotStatus.undecided
-    simulator.validators[0].receive(simulator.validators[0].check(certificates[2]).blck)
+    simulator.validators[0].add(simulator.validators[0].check(certificates[2]).blck)
     check simulator.validators[0].status(round, author) == some SlotStatus.commit
 
   test "commits blocks that are certified by blocks that are received later":

@@ -14,7 +14,7 @@ export validator.primaryProposer
 export validator.nextRound
 export validator.parentBlocks
 export validator.check
-export validator.receive
+export validator.add
 export validator.getBlock
 export validator.status
 export validator.committed

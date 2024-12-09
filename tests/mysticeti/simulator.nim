@@ -41,7 +41,7 @@ proc propose*(simulator: NetworkSimulator, validatorIndex: int): SignedBlock =
   let signature = identity.sign(blck.id.hash)
   let signed = SignedBlock.init(blck, signature)
   let checked = validator.check(signed)
-  validator.receive(checked.blck)
+  validator.add(checked.blck)
   signed
 
 proc propose*(simulator: NetworkSimulator): seq[SignedBlock] =
@@ -61,7 +61,7 @@ proc exchangeBlock*(proposer, receiver: Validator, blck: SignedBlock): ?!void =
     checked = receiver.check(blck)
   # send proposal
   if checked.verdict == BlockVerdict.correct:
-    receiver.receive(checked.blck)
+    receiver.add(checked.blck)
   success()
 
 proc exchangeProposals*(simulator: NetworkSimulator, exchanges: openArray[(int, seq[int])]): ?!seq[SignedBlock] =

@@ -126,7 +126,7 @@ func check*(validator: Validator, signed: SignedBlock): auto =
     return BlockCheck.invalid("block already received")
   BlockCheck.correct(signed)
 
-func receive*(validator: Validator, correct: CorrectBlock) =
+func add*(validator: Validator, correct: CorrectBlock) =
   validator.addBlock(correct.signedBlock)
 
 func getBlock*(validator: Validator, id: BlockId): auto =
