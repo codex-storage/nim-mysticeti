@@ -6,15 +6,15 @@ type
   Block*[Dependencies] = ref object
     author: CommitteeMember
     round: uint64
-    parents: ImmutableSeq[BlockId[Dependencies]]
+    parents: ImmutableSeq[BlockId[Dependencies.Hash]]
     transactions: ImmutableSeq[Dependencies.Transaction]
-    id: ?BlockId[Dependencies]
+    id: ?BlockId[Dependencies.Hash]
 
 func new*[Dependencies](
   _: type Block[Dependencies];
   author: CommitteeMember,
   round: uint64,
-  parents: seq[BlockId[Dependencies]],
+  parents: seq[BlockId[Dependencies.Hash]],
   transactions: seq[Dependencies.Transaction]
 ): auto =
   Block[Dependencies](
@@ -42,6 +42,6 @@ func id*(blck: Block): auto =
     mixin hash
     let blockBytes = Dependencies.Serialization.toBytes(blck)
     let blockHash = Dependencies.Hash.hash(blockBytes)
-    id = BlockId[Dependencies].new(blck.author, blck.round, blockHash)
+    id = BlockId.new(blck.author, blck.round, blockHash)
     blck.id = some id
   id

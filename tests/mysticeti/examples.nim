@@ -13,8 +13,8 @@ proc example*(T: type CommitteeMember): T =
 proc example*(T: type BlockId): T =
   let author = CommitteeMember.example
   let round = uint64.example
-  let hash = T.Dependencies.Hash.example
-  T.new(author, round, hash)
+  let hash = T.Hash.example
+  BlockId.new(author, round, hash)
 
 proc example*(
   T: type Block,
@@ -22,7 +22,7 @@ proc example*(
   round = uint64.example
 ): T =
   type Transaction = T.Dependencies.Transaction
-  let parents = seq[BlockId[T.Dependencies]].example
+  let parents = seq[BlockId[T.Dependencies.Hash]].example
   let transactions = seq[Transaction].example
   T.new(author, round, parents, transactions)
 

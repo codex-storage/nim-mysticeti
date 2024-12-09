@@ -5,7 +5,7 @@ import mysticeti/blocks
 suite "Blocks":
 
   type Block = mysticeti.Block[MockDependencies]
-  type BlockId = mysticeti.BlockId[MockDependencies]
+  type BlockId = mysticeti.BlockId[MockDependencies.Hash]
   type Identity = MockDependencies.Identity
   type Transaction = MockDependencies.Transaction
   type Hash = MockDependencies.Hash

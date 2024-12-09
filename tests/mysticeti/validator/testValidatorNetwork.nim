@@ -11,7 +11,7 @@ suite "Validator Network":
   type Identity = MockDependencies.Identity
   type Transaction = MockDependencies.Transaction
   type Block = blocks.Block[MockDependencies]
-  type BlockId = blocks.BlockId[MockDependencies]
+  type BlockId = blocks.BlockId[MockDependencies.Hash]
   type Hash = MockDependencies.Hash
 
   var simulator: NetworkSimulator

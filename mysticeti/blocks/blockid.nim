@@ -1,17 +1,17 @@
 import ../committee
 
-type BlockId*[Dependencies] = object
+type BlockId*[Hash] = object
   author: CommitteeMember
   round: uint64
-  hash: Dependencies.Hash
+  hash: Hash
 
-func new*[T: BlockId](
-  _: type T,
+func new*[Hash](
+  _: type BlockId,
   author: CommitteeMember,
   round: uint64,
-  hash: T.Dependencies.Hash
+  hash: Hash
 ): auto =
-  T(
+  BlockId[Hash](
     author: author,
     round: round,
     hash: hash

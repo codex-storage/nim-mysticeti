@@ -89,7 +89,7 @@ proc propose*(validator: Validator, transactions: seq[Validator.Dependencies.Tra
   let round = validator.rounds.latest
   if round[validator.membership].proposals.len > 0:
     return SignedBlock.failure "already proposed this round"
-  var parents: seq[BlockId[Validator.Dependencies]]
+  var parents: seq[BlockId[Validator.Dependencies.Hash]]
   var parentStake: Stake
   if previous =? round.previous:
     for slot in previous.slots:
@@ -112,7 +112,7 @@ proc propose*(validator: Validator, transactions: seq[Validator.Dependencies.Tra
 
 func check*(validator: Validator, signed: SignedBlock): auto =
   type BlockCheck = checks.BlockCheck[SignedBlock.Dependencies]
-  type BlockId = blocks.BlockId[SignedBlock.Dependencies]
+  type BlockId = blocks.BlockId[SignedBlock.Dependencies.Hash]
   without member =? validator.committee.membership(signed.signer):
     return BlockCheck.invalid("block is not signed by a committee member")
   if member != signed.blck.author:
