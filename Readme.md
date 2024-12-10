@@ -3,8 +3,7 @@ Mysticeti consensus algorithm
 
 An implementation of [Mysticeti][1], a highly performant DAG based Byzantine
 consensus protocol. This is just the bare consensus algorithm, you need to bring
-your own transaction types, networking, serialization, and cryptographic hashing
-and signature schemes.
+your own transaction types, networking, hashing and signature schemes.
 
 The current implementation only supports the Mysticeti-C protocol, without the
 Mysticeti-FPC fast path extension.
@@ -31,22 +30,18 @@ requires "https://github.com/codex-storage/nim-mysticeti >= 0.1.0 & < 0.2.0"
 Dependencies
 ------------
 
-A Validator can work with any transaction type and any serialization, hashing
-and signature scheme. The Validator type takes a single generic argument called
-`Dependencies`, and this is used to inject the implementations of these
-dependencies at compile time.
+A Validator can work with any transaction type and any signature scheme. The
+Validator type takes a single generic argument called `Dependencies`, and this
+is used to inject the implementations of these dependencies at compile time.
 
 ```nim
 import mysticeti
 
 # gather all dependencies:
 type MyDependencies = Dependencies[
-  MyTransaction,   # provide your own transaction type here
-  MySerialization, # provide your own serialization scheme here
-  MyHash,          # provide your own hashing scheme here
-  MyIdentity       # provide your own private key implementation here
+  Block,           # provide your own type for blocks of transactions here
   MyIdentifier     # provide your own public key implementation here
-  MySignature      # provide your own signature scheme here
+  MySignature      # provide your own cryptographic signature scheme here
 ]
 
 # create a validator type using these dependencies:
@@ -56,40 +51,18 @@ type Validator = mysticeti.Validator[MyDependencies]
 The Validator implementation has certain expectations about each of these
 dependencies, and they are detailed below.
 
-### Transaction type
+### Blocks
 
-A transaction type can be anything, as long as it can be serialized as part of
-the block serialization.
+The validator expects a `Block` type that support the following functions:
 
-  * `Transaction`: represents a transaction that can be added to a block
+  * `Block`: represents a block of transactions
+  * `Block.author`: returns the committee member that authored the block
+  * `Block.round`: returns the consensus round for which the block was produced
+  * `Block.parents`: returns the parent blocks for this block
+  * `Block.id`: returns a BlockId that uniquely identifies the block
 
 A toy example that shows how to provide this type can found in
-[`mocks/transaction.nim`](tests/mysticeti/mocks/transaction.nim).
-
-### Serialization
-
-A serialization scheme for blocks is required so that a block can be converted
-to bytes, which can then be hashed and signed. The Validator implementation
-expects the following type and function to be present:
-
-  * `Serialization`: represents a serialization scheme
-  * `Serialization.toBytes(block)`: converts a block into bytes
-
-A toy example that shows how to provide this type and function can be found in
-[`mocks/serialization.nim`](tests/mysticeti/mocks/serialization.nim).
-
-### Hashing
-
-A cryptographic hashing scheme is required so that a block hash can be created
-that uniquely identifies the block. The Validator implementation expects a
-`Hash` type and the following functions:
-
-   * `Hash`: represents a digest from a hashing function
-   * `Hash.hash(bytes)`: digests the bytes to create a hash
-   * `==`: checks whether two hashes are equal
-
-A toy example that shows how to provide this type and these functions can found
-in [`mocks/hashing.nim`](tests/mysticeti/mocks/hashing.nim).
+[`mocks/blck.nim`](tests/mysticeti/mocks/blck.nim).
 
 ### Signature scheme
 
@@ -97,12 +70,9 @@ A cryptographic signature scheme is required so that validators can sign off on
 the blocks that they propose. The Validator implementation expects the following
 types and functions to be present:
 
-   * `Identity`: represents the private key that a validator uses to sign
    * `Identifier`: represents a public key that is used to identify a validator
    * `Signature`: represents a block signature
-   * `identity.identifier`: the public key that is derived from the private key
-   * `identity.sign(hash)`: signs the hash and returns a Signature
-   * `signature.signer(hash)`: returns the signer that signed the hash
+   * `signature.signer(hash)`: returns the identifier that signed the hash
    * `==`: checks whether two identifiers or two signatures are equal
 
 A toy example that shows how to provide these types and functions can found in
@@ -130,15 +100,15 @@ let committee = Committee.new({
 })
 ```
 
-A validator can be instantiated using its identity and the committee that it is
-part of:
+A validator can be instantiated using its identifier (public key) and the
+committee that it is part of:
 
 ```nim
-let validator = Validator.new(identity, committee)
+let validator = Validator.new(identifier, committee)
 ```
 
-> Note: the identity that you pass to the validator needs to have its
-> corresponding identifier present in the commitee
+> Note: the identifier that you pass to the validator needs to be present in the
+> committee
 
 Running a Validator
 -------------------
@@ -151,20 +121,28 @@ and commits them.
 
 ### Proposing blocks
 
-To propose a new block of transactions, invoke the `propose` function:
+To propose a new block of transactions, create an instance of the `Block` type.
+The `author`, `round` and `parents` fields of the `Block` can be populated
+through calls to the validator:
 
 ```nim
-import questionable/results
-
-if signedBlock =? validator.propose(transactions):
-  # send the signed block to other validators
+let author = validator.membership
+let round = validator.round
+let parents = validator.parentBlocks
+let blck = # create block instance using author, round and parents
 ```
 
-The `propose` function returns a
-[`Result`](https://github.com/codex-storage/questionable) that either contains a
-signed block of transactions, or an error. Errors may occur because a block was
-already proposed this round, or because there were not enough parent blocks to
-construct a valid block.
+Then you can sign the block hash, and use it to create a `SignedBlock` instance.
+
+```nim
+let blockHash = blck.id.hash
+let signature = # create cryptographic signature of the block hash
+let signedBlock = SignedBlock.init(blck, signature)
+```
+
+Then you should add the block to your validator and send it to the other
+validators. Adding your own proposed block to your validator follows the same
+flow as adding blocks that you received from other validators:
 
 ### Receiving blocks
 
@@ -178,12 +156,12 @@ let checked = validator.check(signedBlock)
 This gives you a `BlockCheck` object containing a `verdict` about the block's
 correctness. The verdict can be either `correct`, `invalid`, or `incomplete`.
 
-When the verdict is `correct`, you can pass the correct block into the `receive`
+When the verdict is `correct`, you can pass the correct block into the `add`
 function:
 
 ```nim
 if checked.verdict == BlockVerdict.correct:
-  validator.receive(checked.blck)
+  validator.add(checked.blck)
 ```
 
 When the verdict is `invalid`, the received block should be ignored:
