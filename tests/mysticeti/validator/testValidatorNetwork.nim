@@ -73,7 +73,7 @@ suite "Validator Network":
   test "refuses proposals that have a parent that is not from a previous round":
     let parents = (!simulator.exchangeProposals()).mapIt(it.blck.id)
     let badParentRound = 1'u64
-    let badParent = BlockId.new(CommitteeMember(0), badParentRound, Hash.example)
+    let badParent = BlockId.init(CommitteeMember(0), badParentRound, Hash.example)
     simulator.nextRound()
     let blck = Block.new(
       CommitteeMember(0),

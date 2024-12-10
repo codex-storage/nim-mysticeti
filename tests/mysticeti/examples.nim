@@ -14,7 +14,7 @@ proc example*(T: type BlockId): T =
   let author = CommitteeMember.example
   let round = uint64.example
   let hash = T.Hash.example
-  BlockId.new(author, round, hash)
+  BlockId.init(author, round, hash)
 
 proc example*(
   T: type SignedBlock,

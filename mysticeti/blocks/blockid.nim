@@ -5,7 +5,7 @@ type BlockId*[Hash] = object
   round: uint64
   hash: Hash
 
-func new*[Hash](
+func init*[Hash](
   _: type BlockId,
   author: CommitteeMember,
   round: uint64,

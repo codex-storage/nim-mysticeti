@@ -28,6 +28,6 @@ func id*(blck: MockBlock): auto =
   without var id =? blck.id:
     let blockBytes = cast[seq[byte]]($blck[])
     let blockHash = MockHash.hash(blockBytes)
-    id = BlockId.new(blck.author, blck.round, blockHash)
+    id = BlockId.init(blck.author, blck.round, blockHash)
     blck.id = some id
   id

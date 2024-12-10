@@ -37,7 +37,7 @@ export committee.`$`
 import ./mysticeti/blocks
 
 export blocks.BlockId
-export blocks.new
+export blocks.init
 export blocks.author
 export blocks.round
 export blocks.hash
