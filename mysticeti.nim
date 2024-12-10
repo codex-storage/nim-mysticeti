@@ -38,6 +38,9 @@ import ./mysticeti/blocks
 
 export blocks.BlockId
 export blocks.new
+export blocks.author
+export blocks.round
+export blocks.hash
 export blocks.SignedBlock
 export blocks.blck
 export blocks.signer
