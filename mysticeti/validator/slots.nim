@@ -11,7 +11,7 @@ type
     slot: ProposerSlot[Dependencies]
     signedBlock: SignedBlock[Dependencies]
     certifiedBy: Voting
-    certificates: seq[BlockId[Dependencies.Hash]]
+    certificates: seq[typeof(Dependencies.Block.default.id)]
   SlotStatus* {.pure.} = enum
     undecided
     skip

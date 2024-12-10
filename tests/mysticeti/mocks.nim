@@ -11,7 +11,6 @@ export blck
 
 type MockDependencies* = Dependencies[
   MockBlock,
-  MockHash,
   MockIdentifier,
   MockSignature
 ]

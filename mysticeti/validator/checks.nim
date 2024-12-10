@@ -11,7 +11,7 @@ type
     of invalid:
       reason: string
     of incomplete:
-      missing: seq[BlockId[Dependencies.Hash]]
+      missing: seq[typeof(Dependencies.Block.default.id)]
     of correct:
       blck: CorrectBlock[Dependencies]
   CorrectBlock*[Dependencies] = distinct SignedBlock[Dependencies]

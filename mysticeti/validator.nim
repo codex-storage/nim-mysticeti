@@ -84,7 +84,9 @@ func addBlock(validator: Validator, signedBlock: SignedBlock) =
 
 func parentBlocks*(validator: Validator): auto =
   mixin id
-  var parents: seq[BlockId[Validator.Dependencies.Hash]]
+  type Block = Validator.Dependencies.Block
+  type BlockId = typeof(Block.default.id)
+  var parents: seq[BlockId]
   if previous =? validator.rounds.latest.previous:
     for slot in previous.slots:
       if slot.proposals.len == 1:
@@ -93,8 +95,9 @@ func parentBlocks*(validator: Validator): auto =
 
 func check*(validator: Validator, signed: SignedBlock): auto =
   mixin id
-  type BlockCheck = checks.BlockCheck[SignedBlock.Dependencies]
-  type BlockId = blocks.BlockId[SignedBlock.Dependencies.Hash]
+  type BlockCheck = checks.BlockCheck[Validator.Dependencies]
+  type Block = Validator.Dependencies.Block
+  type BlockId = typeof(Block.default.id)
   without member =? validator.committee.membership(signed.signer):
     return BlockCheck.invalid("block is not signed by a committee member")
   if member != signed.blck.author:
