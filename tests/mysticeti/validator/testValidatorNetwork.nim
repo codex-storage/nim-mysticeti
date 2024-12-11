@@ -55,10 +55,22 @@ suite "Validator Network":
     simulator.validators[0].add(checked.blck)
     check simulator.validators[0].status(round, author) == some SlotStatus.undecided
 
+  test "refuses proposals that have an incorrect signature":
+    let proposal = simulator.propose(1)
+    let identifier = simulator.identities[1].identifier
+    let wrongIdentity = simulator.identities[2]
+    let wrongSignature = wrongIdentity.sign(proposal.blck.id.hash)
+    let wrongSigned = SignedBlock.init(proposal.blck, identifier, wrongSignature)
+    let checked = simulator.validators[0].check(wrongSigned)
+    check checked.verdict == BlockVerdict.invalid
+    check checked.reason == "block signature is incorrect"
+
   test "refuses proposals that are not signed by the author":
     let proposal = simulator.propose(1)
-    let wrongSignature = simulator.identities[2].sign(proposal.blck.id.hash)
-    let wrongSigned = SignedBlock.init(proposal.blck, wrongSignature)
+    let wrongIdentity = simulator.identities[2]
+    let wrongIdentifier = wrongIdentity.identifier
+    let wrongSignature = wrongIdentity.sign(proposal.blck.id.hash)
+    let wrongSigned = SignedBlock.init(proposal.blck, wrongIdentifier, wrongSignature)
     let checked = simulator.validators[0].check(wrongSigned)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block is not signed by its author"
@@ -81,8 +93,9 @@ suite "Validator Network":
       parents & badparent,
       seq[Transaction].example
     )
-    let signature = simulator.identities[0].sign(blck.id.hash)
-    let proposal = SignedBlock.init(blck, signature)
+    let identity = simulator.identities[0]
+    let signature = identity.sign(blck.id.hash)
+    let proposal = SignedBlock.init(blck, identity.identifier, signature)
     let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block has a parent from an invalid round"
@@ -97,8 +110,9 @@ suite "Validator Network":
       parents & badparent,
       seq[Transaction].example
     )
-    let signature = simulator.identities[0].sign(blck.id.hash)
-    let proposal = SignedBlock.init(blck, signature)
+    let identity = simulator.identities[0]
+    let signature = identity.sign(blck.id.hash)
+    let proposal = SignedBlock.init(blck, identity.identifier, signature)
     let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason == "block includes a parent more than once"
@@ -112,8 +126,9 @@ suite "Validator Network":
       parents[0..<2],
       seq[Transaction].example
     )
-    let signature = simulator.identities[0].sign(blck.id.hash)
-    let proposal = SignedBlock.init(blck, signature)
+    let identity = simulator.identities[0]
+    let signature = identity.sign(blck.id.hash)
+    let proposal = SignedBlock.init(blck, identity.identifier, signature)
     let checked = simulator.validators[1].check(proposal)
     check checked.verdict == BlockVerdict.invalid
     check checked.reason ==
@@ -316,10 +331,11 @@ suite "Validator Network":
       parents = @[],
       transactions = seq[Transaction].example(length = 1..10)
     )
-    let signatureA = simulator.identities[0].sign(blockA.id.hash)
-    let signatureB = simulator.identities[0].sign(blockB.id.hash)
-    let proposalA = SignedBlock.init(blockA, signatureA)
-    let proposalB = SignedBlock.init(blockB, signatureB)
+    let identity = simulator.identities[0]
+    let signatureA = identity.sign(blockA.id.hash)
+    let signatureB = identity.sign(blockB.id.hash)
+    let proposalA = SignedBlock.init(blockA, identity.identifier, signatureA)
+    let proposalB = SignedBlock.init(blockB, identity.identifier, signatureB)
     # validator 0 sends different proposals to different parts of the network
     !exchangeBlock(simulator.validators[0], simulator.validators[0], proposalA)
     !exchangeBlock(simulator.validators[0], simulator.validators[1], proposalA)

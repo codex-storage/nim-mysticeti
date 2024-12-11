@@ -98,6 +98,8 @@ func check*(validator: Validator, signed: SignedBlock): auto =
   type BlockCheck = checks.BlockCheck[Validator.Dependencies]
   type Block = Validator.Dependencies.Block
   type BlockId = typeof(Block.default.id)
+  if not signed.verifySignature():
+    return BlockCheck.invalid("block signature is incorrect")
   without member =? validator.committee.membership(signed.signer):
     return BlockCheck.invalid("block is not signed by a committee member")
   if member != signed.blck.author:

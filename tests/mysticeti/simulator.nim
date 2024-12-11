@@ -39,7 +39,7 @@ proc propose*(simulator: NetworkSimulator, validatorIndex: int): SignedBlock =
   let transactions = seq[Transaction].example
   let blck = Block.new(author, round, parents, transactions)
   let signature = identity.sign(blck.id.hash)
-  let signed = SignedBlock.init(blck, signature)
+  let signed = SignedBlock.init(blck, validator.identifier, signature)
   let checked = validator.check(signed)
   validator.add(checked.blck)
   signed

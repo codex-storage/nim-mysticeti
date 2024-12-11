@@ -20,5 +20,9 @@ func identifier*(identity: MockIdentity): MockIdentifier =
 func sign*(identity: MockIdentity; hash: MockHash): MockSignature =
   MockSignature(signer: identity.id)
 
-func signer*(signature: MockSignature, hash: MockHash): MockIdentifier =
-  MockIdentifier(id: signature.signer)
+func verify*(
+  signature: MockSignature,
+  identifier: MockIdentifier,
+  hash: MockHash
+): bool =
+  signature.signer == identifier.id

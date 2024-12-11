@@ -72,7 +72,7 @@ types and functions to be present:
 
    * `Identifier`: represents a public key that is used to identify a validator
    * `Signature`: represents a block signature
-   * `signature.signer(hash)`: returns the identifier that signed the hash
+   * `signature.verify(identifier, hash)`: checks that the signature is correct
    * `==`: checks whether two identifiers or two signatures are equal
 
 A toy example that shows how to provide these types and functions can found in

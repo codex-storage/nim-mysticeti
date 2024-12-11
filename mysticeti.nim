@@ -44,3 +44,5 @@ export blocks.hash
 export blocks.SignedBlock
 export blocks.blck
 export blocks.signer
+export blocks.signature
+export blocks.verifySignature

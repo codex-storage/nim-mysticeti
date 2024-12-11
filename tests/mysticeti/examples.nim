@@ -22,8 +22,9 @@ proc example*(
   round = uint64.example
 ): T =
   let blck = T.Dependencies.Block.example(author = author, round = round)
+  let signer = T.Dependencies.Identifier.example
   let signature = T.Dependencies.Signature.example
-  SignedBlock[T.Dependencies].init(blck, signature)
+  SignedBlock[T.Dependencies].init(blck, signer, signature)
 
 proc example*[T](_: type seq[T], length=0..10): seq[T] =
   let size = rand(length)
