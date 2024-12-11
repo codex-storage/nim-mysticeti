@@ -98,7 +98,7 @@ func parentBlocks*(validator: Validator): auto =
   var parents: seq[BlockId]
   if previous =? validator.rounds.latest.previous:
     for slot in previous.slots:
-      if slot.proposals.len == 1:
+      if slot.proposals.len > 0:
         parents.add(slot.proposals[0].blck.id)
   parents
 

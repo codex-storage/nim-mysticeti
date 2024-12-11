@@ -296,29 +296,18 @@ suite "Validator Network":
       check toSeq(validator.committed()) == expected
 
   test "validators handle equivocation":
-    # three out of four validators exchange proposals normally
+    # validator 0 creates two different proposals
+    let proposalA, proposalB = simulator.propose(0)
+    # validator 0 sends different proposals to different parts of the network
+    !exchangeBlock(simulator.validators[0], simulator.validators[1], proposalA)
+    !exchangeBlock(simulator.validators[0], simulator.validators[2], proposalA)
+    !exchangeBlock(simulator.validators[0], simulator.validators[3], proposalB)
+    #  other validators exchange proposals normally
     discard !simulator.exchangeProposals({
       1: @[0, 1, 2, 3],
       2: @[0, 1, 2, 3],
       3: @[0, 1, 2, 3]
     })
-    # validator 0 creates two different proposals
-    let blockA, blockB = Block.new(
-      author = CommitteeMember(0),
-      round = 0,
-      parents = @[],
-      transactions = seq[Transaction].example(length = 1..10)
-    )
-    let identity = simulator.identities[0]
-    let signatureA = identity.sign(blockA.id.hash)
-    let signatureB = identity.sign(blockB.id.hash)
-    let proposalA = SignedBlock.init(blockA, identity.identifier, signatureA)
-    let proposalB = SignedBlock.init(blockB, identity.identifier, signatureB)
-    # validator 0 sends different proposals to different parts of the network
-    !exchangeBlock(simulator.validators[0], simulator.validators[0], proposalA)
-    !exchangeBlock(simulator.validators[0], simulator.validators[1], proposalA)
-    !exchangeBlock(simulator.validators[0], simulator.validators[2], proposalA)
-    !exchangeBlock(simulator.validators[0], simulator.validators[3], proposalB)
     # next rounds happen normally
     discard !simulator.exchangeProposals()
     discard !simulator.exchangeProposals()
