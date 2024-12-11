@@ -8,9 +8,7 @@ suite "Validator Network Performance":
     # TODO: 100 validators
     let simulator = NetworkSimulator.init(20)
     discard !simulator.exchangeProposals()
-    simulator.nextRound()
     discard !simulator.exchangeProposals()
-    simulator.nextRound()
     let start = now()
     discard !simulator.exchangeProposals()
     let finish = now()

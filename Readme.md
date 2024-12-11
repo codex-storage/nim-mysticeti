@@ -183,18 +183,12 @@ if checked.verdict == BlockVerdict.incomplete:
 
 ### Moving to the next round
 
-The Mysticeti protocol uses a threshold logical clock to move from one round to
-the next. This means that each validator moves to the next round when it's seen
-enough blocks in the current round to represent >2/3 of the stake.
+The validator uses a threshold logical clock to move from one round to the next.
+This means it moves to the next round when it's seen enough blocks in the
+current round to represent >2/3 of the stake.
 
 Additionaly, the protocol mandates that all validators wait for the primary
-proposer of the round (with a timeout), before moving to the next round.
-
-To move to the next round, invoke the `nextRound` function:
-
-```nim
-validator.nextRound()
-```
+proposer of the round (with a timeout), before creating their own blocks.
 
 The primary proposer for the current round can be retrieved from the validator:
 

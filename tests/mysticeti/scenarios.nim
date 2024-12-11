@@ -18,35 +18,30 @@ proc scenarioFigure4*(simulator: NetworkSimulator): ?!seq[seq[SignedBlock]] =
     2: @[0, 2, 3],
     3: @[1, 2, 3]
   })
-  simulator.nextRound()
   proposals.add(? simulator.exchangeProposals {
     0: @[0, 1, 3],
     1: @[0, 1, 3],
     2: @[0, 3],
     3: @[1, 3]
   })
-  simulator.nextRound()
   proposals.add(? simulator.exchangeProposals {
     0: @[2, 3, 0, 1],
     1: @[2, 3, 0, 1],
 
     3: @[2, 3, 0, 1]
   })
-  simulator.nextRound()
   proposals.add(? simulator.exchangeProposals {
     2: @[2, 3, 0, 1],
     3: @[3],
     0: @[2, 3, 0, 1],
     1: @[2, 3, 0, 1]
   })
-  simulator.nextRound()
   proposals.add(? simulator.exchangeProposals {
     2: @[],
     3: @[2, 3, 0],
     0: @[2, 3, 0],
     1: @[2, 3, 0]
   })
-  simulator.nextRound()
   proposals.add(? simulator.exchangeProposals {
     2: @[2, 3, 0, 1],
     3: @[2, 3, 0, 1],
@@ -74,5 +69,4 @@ proc randomScenario*(simulator: NetworkSimulator): ?!seq[seq[SignedBlock]] =
         receivers.add(receiver)
       exchanges.add( (proposer, receivers) )
     proposals.add(? simulator.exchangeProposals(exchanges))
-    simulator.nextRound()
   success proposals

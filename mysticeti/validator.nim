@@ -13,6 +13,7 @@ type Validator*[Dependencies] = ref object
   committee: Committee[Dependencies.Identifier]
   membership: CommitteeMember
   rounds: Rounds[Dependencies]
+  clockThreshold: Voting
 
 func new*[Dependencies](
   _: type Validator[Dependencies],
@@ -39,9 +40,6 @@ func round*(validator: Validator): uint64 =
 
 func primaryProposer*(validator: Validator): CommitteeMember =
   validator.rounds.latest.primaryProposer
-
-func nextRound*(validator: Validator) =
-  validator.rounds.addNewRound()
 
 func updateSkipped(validator: Validator, supporter: Validator.Dependencies.Block) =
   func skips(blck: Validator.Dependencies.Block, round: uint64, author: CommitteeMember): bool =
@@ -76,11 +74,22 @@ func updateCertified(validator: Validator, certificate: Validator.Dependencies.B
       let stake = validator.committee.stake(certificate.author)
       proposal.certifyBy(certificate.id, stake)
 
+func updateRound(validator: Validator, blck: Validator.Dependencies.Block) =
+  if blck.round == validator.round:
+    let author = blck.author
+    let stake = validator.committee.stake(author)
+    validator.clockThreshold.add(author, stake)
+    if validator.clockThreshold.stake > 2/3:
+      validator.rounds.addNewRound()
+      validator.clockThreshold.reset()
+
 func addBlock(validator: Validator, signedBlock: SignedBlock) =
-  if round =? validator.rounds.latest.find(signedBlock.blck.round):
+  let blck = signedBlock.blck
+  if round =? validator.rounds.latest.find(blck.round):
     round.addProposal(signedBlock)
-    validator.updateSkipped(signedBlock.blck)
-    validator.updateCertified(signedBlock.blck)
+    validator.updateSkipped(blck)
+    validator.updateCertified(blck)
+    validator.updateRound(blck)
 
 func parentBlocks*(validator: Validator): auto =
   mixin id
@@ -104,8 +113,6 @@ func check*(validator: Validator, signed: SignedBlock): auto =
     return BlockCheck.invalid("block is not signed by a committee member")
   if member != signed.blck.author:
     return BlockCheck.invalid("block is not signed by its author")
-  if signed.blck.round > validator.round:
-    return BlockCheck.invalid("block has a round number that is too high")
   for parent in signed.blck.parents:
     if parent.round >= signed.blck.round:
       return BlockCheck.invalid("block has a parent from an invalid round")

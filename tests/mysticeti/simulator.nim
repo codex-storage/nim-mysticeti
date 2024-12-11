@@ -26,10 +26,6 @@ func identities*(simulator: NetworkSimulator): seq[Identity] =
 func validators*(simulator: NetworkSimulator): seq[Validator] =
   simulator.validators
 
-func nextRound*(simulator: NetworkSimulator) =
-  for validator in simulator.validators:
-    validator.nextRound()
-
 proc propose*(simulator: NetworkSimulator, validatorIndex: int): SignedBlock =
   let validator = simulator.validators[validatorIndex]
   let identity = simulator.identities[validatorIndex]

@@ -21,28 +21,30 @@ suite "Validator Network":
     for validator in simulator.validators:
       check validator.round == 0
 
-  test "validators can move to next round":
-    for validator in simulator.validators:
-      validator.nextRound()
-      check validator.round == 1
-      validator.nextRound()
-      validator.nextRound()
-      check validator.round == 3
+  test "validators move to the next round after receiving >2/3 stake proposals":
+    let validator = simulator.validators[0]
+    for round in 0'u64..10:
+      check validator.round == round # 0/4 stake
+      discard !simulator.exchangeProposals({0: @[0, 1, 2, 3]})
+      check validator.round == round # 1/4 stake
+      discard !simulator.exchangeProposals({1: @[0, 1, 2, 3]})
+      check validator.round == round # 2/4 stake
+      discard !simulator.exchangeProposals({2: @[0, 1, 2, 3]})
+      check validator.round == round + 1 # 3/4 stake
 
   test "primary proposer rotates on a round-robin schedule":
     check simulator.validators.allIt(it.primaryProposer == CommitteeMember(0))
-    simulator.nextRound()
+    discard !simulator.exchangeProposals()
     check simulator.validators.allIt(it.primaryProposer == CommitteeMember(1))
-    simulator.nextRound()
+    discard !simulator.exchangeProposals()
     check simulator.validators.allIt(it.primaryProposer == CommitteeMember(2))
-    simulator.nextRound()
+    discard !simulator.exchangeProposals()
     check simulator.validators.allIt(it.primaryProposer == CommitteeMember(3))
-    simulator.nextRound()
+    discard !simulator.exchangeProposals()
     check simulator.validators.allIt(it.primaryProposer == CommitteeMember(0))
 
   test "validators expose blocks from previous round as parents":
     let previous = !simulator.exchangeProposals()
-    simulator.nextRound()
     let parents = simulator.validators[0].parentBlocks
     for proposal in previous:
       check proposal.blck.id in parents
@@ -86,7 +88,6 @@ suite "Validator Network":
     let parents = (!simulator.exchangeProposals()).mapIt(it.blck.id)
     let badParentRound = 1'u64
     let badParent = BlockId.init(CommitteeMember(0), badParentRound, Hash.example)
-    simulator.nextRound()
     let blck = Block.new(
       CommitteeMember(0),
       round = 1,
@@ -103,7 +104,6 @@ suite "Validator Network":
   test "refuses proposals that include a parent more than once":
     let parents = (!simulator.exchangeProposals()).mapIt(it.blck.id)
     let badParent = parents.sample
-    simulator.nextRound()
     let blck = Block.new(
       CommitteeMember(0),
       round = 1,
@@ -119,7 +119,6 @@ suite "Validator Network":
 
   test "refuses proposals without >2/3 parents from the previous round":
     let parents = (!simulator.exchangeProposals()).mapIt(it.blck.id)
-    simulator.nextRound()
     let blck = Block.new(
       CommitteeMember(0),
       round = 1,
@@ -143,7 +142,6 @@ suite "Validator Network":
       3: @[0, 1, 2, 3],
     }
     # second round: validator 0 creates block with parent that others didn't see
-    simulator.nextRound()
     let proposal = simulator.propose(0)
     # other validator will not accept block before it receives the parent
     let checked = simulator.validators[1].check(proposal)
@@ -160,8 +158,6 @@ suite "Validator Network":
     }
     # for the second to the sixth round, validator 0 is down
     for _ in 2..6:
-      for validator in simulator.validators[1..3]:
-        validator.nextRound()
       discard !simulator.exchangeProposals {
         1: @[1, 2, 3],
         2: @[1, 2, 3],
@@ -170,18 +166,11 @@ suite "Validator Network":
     # validator 1 cleans up old blocks
     discard toSeq(simulator.validators[1].committed())
     # validator 0 comes back online and creates block for second round
-    simulator.validators[0].nextRound()
     let proposal = simulator.propose(0)
     # validator 1 accepts block even though parent has already been cleaned up
-    check simulator.validators[1].check(proposal).verdict == BlockVerdict.correct
-
-  test "refuses proposals with a round number that is too high":
-    discard !simulator.exchangeProposals()
-    simulator.validators[0].nextRound()
-    let proposal = simulator.propose(0)
     let checked = simulator.validators[1].check(proposal)
-    check checked.verdict == BlockVerdict.invalid
-    check checked.reason == "block has a round number that is too high"
+    check checked.verdict == BlockVerdict.correct
+    simulator.validators[1].add(checked.blck)
 
   test "refuses a proposal that was already received":
     let proposals = !simulator.exchangeProposals()
@@ -200,7 +189,6 @@ suite "Validator Network":
     let round = proposals[0].blck.round
     let author = proposals[0].blck.author
     # second round: voting
-    simulator.nextRound()
     let votes = simulator.propose()
     simulator.validators[0].add(simulator.validators[0].check(votes[1]).blck)
     simulator.validators[0].add(simulator.validators[0].check(votes[2]).blck)
@@ -217,7 +205,6 @@ suite "Validator Network":
       3: @[0, 1, 2, 3]
     }
     # second round: first validator does not receive votes
-    simulator.nextRound()
     discard !simulator.exchangeProposals {
       1: @[1, 2, 3],
       2: @[1, 2, 3],
@@ -225,7 +212,6 @@ suite "Validator Network":
     }
     # third round: first validator receives certificates, and also the votes
     # from the previous round because they are the parents of the certificates
-    simulator.nextRound()
     discard !simulator.exchangeProposals {
       1: @[0, 1, 2, 3],
       2: @[0, 1, 2, 3],
@@ -241,10 +227,8 @@ suite "Validator Network":
     let round = proposal.blck.round
     let author = proposal.blck.author
     # second round: voting
-    simulator.nextRound()
     discard !simulator.exchangeProposals()
     # third round: certifying
-    simulator.nextRound()
     let certificates = simulator.propose()
     simulator.validators[0].add(simulator.validators[0].check(certificates[1]).blck)
     check simulator.validators[0].status(round, author) == some SlotStatus.undecided
@@ -255,14 +239,12 @@ suite "Validator Network":
     # first round: proposing
     let proposals = !simulator.exchangeProposals()
     # second round: first validator does not receive votes
-    simulator.nextRound()
     discard !simulator.exchangeProposals {
       1: @[1, 2, 3],
       2: @[1, 2, 3],
       3: @[1, 2, 3]
     }
     # third round: first validator does not receive certificates
-    simulator.nextRound()
     discard !simulator.exchangeProposals {
       1: @[1, 2, 3],
       2: @[1, 2, 3],
@@ -270,7 +252,6 @@ suite "Validator Network":
     }
     # fourth round: first validator receives votes and certificates, because
     # they are the parents of the blocks from this round
-    simulator.nextRound()
     discard !simulator.exchangeProposals {
       1: @[0, 1, 2, 3],
       2: @[0, 1, 2, 3],
@@ -283,15 +264,12 @@ suite "Validator Network":
   test "can iterate over the list of committed blocks":
     # blocks proposed in first round, in order of committee members
     let first = (!simulator.exchangeProposals()).mapIt(it.blck)
-    simulator.nextRound()
     # blocks proposed in second round, round-robin order
     let second = (!simulator.exchangeProposals()).mapIt(it.blck).rotatedLeft(1)
-    simulator.nextRound()
     # certify blocks from the first round
     discard !simulator.exchangeProposals()
     check toSeq(simulator.validators[0].committed()) == first
     # certify blocks from the second round
-    simulator.nextRound()
     discard !simulator.exchangeProposals()
     check toSeq(simulator.validators[0].committed()) == second
 
@@ -342,9 +320,7 @@ suite "Validator Network":
     !exchangeBlock(simulator.validators[0], simulator.validators[2], proposalA)
     !exchangeBlock(simulator.validators[0], simulator.validators[3], proposalB)
     # next rounds happen normally
-    simulator.nextRound()
     discard !simulator.exchangeProposals()
-    simulator.nextRound()
     discard !simulator.exchangeProposals()
     # check that only the proposal that was sent to the majority is committed
     for validator in simulator.validators:
